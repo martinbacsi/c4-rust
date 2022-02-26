@@ -1,5 +1,7 @@
 
-use std::{collections::HashMap, hash::Hash, ops::RangeBounds, sync::Arc};
+use std::cmp::max;
+use std::mem;
+use std::{collections::HashMap};
 use connect4::Connect4;
 use connect4::Outcome;
 
@@ -51,7 +53,7 @@ impl Node {
         Node {
             terminal: false,
             visits: 0,
-            value: 0.,
+            value: -1.,
             Q: 0.,
             P: 0.,
             children: Vec::new(),
@@ -59,25 +61,40 @@ impl Node {
         }
     }
 
+    fn reinit(&mut self){
+        *self = Node::new();
+    }
+
     fn UCB(&self, mult: f64) -> f64 {
         ((self.P as f64) * mult + self.Q) / ((1 + self.visits) as f64)
     }
 
-    fn Select(&self) -> &Box<Node> {
-        assert!(!self.terminal);
-        let mult = cpuct * (self.visits as f64).sqrt();
-        let mut best_val = f64::NEG_INFINITY;
-        let mut best = &self.children[0];
-
-        for c in self.children.iter() {
-            let val = c.UCB(mult);
-            if val > best_val {
-                best_val = val;
-                //TODO itt felülírja vagy mi a szösz
-                best = c;
+    fn Select(&mut self) -> usize {
+        if self.terminal {
+            0 as usize
+        } else {
+            let mult = cpuct * (self.visits as f64).sqrt();
+            let mut best_val = f64::NEG_INFINITY;
+            let mut best = 0;
+            self.terminal = true;
+            for cid in 0..self.children.len() {
+                let c = &self.children[cid];
+                if c.terminal {
+                    let v = -c.value;
+                    if v > self.value {
+                        self.value = v;
+                    }
+                } else {
+                    self.terminal = false;
+                    let val = c.UCB(mult);
+                    if val > best_val {
+                        best_val = val; 
+                        best = cid;
+                    }
+                }
             }
-        }
-        best
+            best
+        } 
    }
 
    fn Expand(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
@@ -92,19 +109,29 @@ impl Node {
         nnval.v
    }
 
+   fn Update(&mut self, value: f32) {
+        self.visits += 1;
+        self.Q += value as f64;
+   }
+
    fn PlayOut(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
         if self.game.outcome != Outcome::None {
             self.value =  if self.game.outcome == Outcome::Win {1.}  else {0.};
             self.terminal = true;
         }
+        let mut val = f32::NAN;
 
+        if self.children.is_empty() {
+            val = self.Expand(NN, pool);
+        } 
+
+        let cid = self.Select();
         if self.terminal {
-
-        }
-
-
-        0.0
-
+            val = self.value;
+        } else {
+            val = -self.children[cid].PlayOut(NN, pool);
+        } 
+        val
    }
 }
 
@@ -122,12 +149,11 @@ impl Pool {
     }
 
     fn pop(&mut self) -> Box<Node> {
-        let mut ret = self.nodes.pop().unwrap();
-        (*ret) = Node::new();
-        ret
+        self.nodes.pop().unwrap()
     }
 
-    fn push(mut self, ptr: Box<Node>) {
+    fn push(&mut self, mut ptr: Box<Node>) {
+        ptr.reinit();
         self.nodes.push(ptr);
     }
 }
