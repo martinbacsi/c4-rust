@@ -131,6 +131,7 @@ impl Node {
                 val = -self.children[cid].PlayOut(NN, pool);
             } 
         }
+        self.UCB(val);
         val
    }
 }
