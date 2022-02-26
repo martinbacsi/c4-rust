@@ -11,6 +11,10 @@
 +----------------------------+
 */
 
+use std::arch::x86_64::_popcnt64;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::Hasher;
+
 const WIDTH: usize = 9;
 const HEIGHT: usize = 7;
 
@@ -62,46 +66,62 @@ const fn won(bb: u64) -> bool {
     v + h + d1 + d2 > 0
 }
 
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+pub enum Outcome {
+    Win,
+    Draw,
+    None
+}
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Connect4 {
     my_bb: u64,
     op_bb: u64,
     height: [u8; WIDTH],
     player: u8,
-}
-
-impl std::hash::Hash for Connect4 {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        state.write_u64(self.my_bb);
-        state.write_u64(self.op_bb);
-    }
+    pub outcome: Outcome
 }
 
 impl Connect4 {
-    fn winner(&self) -> bool {
-        won(self.op_bb)
+    pub fn hash(&self) -> usize {
+        let mut hasher = DefaultHasher::new();
+        hasher.write_u64(self.my_bb);
+        hasher.write_u64(self.op_bb);
+        hasher.finish() as usize
     }
 
-    fn new() -> Self {
+    pub fn OnValidActions<T>(&self, func: &mut T)    
+    where T: FnMut(u8) {
+        (0..WIDTH).for_each(| i| {if self.height[i] < HEIGHT as u8  {func(i as u8)};});
+    }
+
+    pub fn new() -> Self {
         Self {
             my_bb: 0,
             op_bb: 0,
             height: [0; WIDTH],
             player: 0,
+            outcome: Outcome::None
+        }
+    }
+    
+    fn full (self) -> bool {
+        unsafe {
+            _popcnt64((self.my_bb | self.op_bb) as i64) == (WIDTH * HEIGHT) as i32
         }
     }
 
-    fn is_over(&self) -> bool {
-        //todo bit count
-        self.winner() || (0..WIDTH).all(|col| self.height[col] == HEIGHT as u8)
-    }
-
-    fn step(&mut self, action: u8) {
+    pub fn step(&mut self, action: u8) {
         self.my_bb ^= 1 << (self.height[action as usize] as usize + HEIGHT * (action as usize));
         self.height[action as usize] += 1;
         std::mem::swap(&mut self.my_bb, &mut self.op_bb);
-        self.player = 1 - self.player
+        self.player = 1 - self.player;
+
+        if won(self.op_bb) {
+            self.outcome = Outcome::Win;
+        } else if self.full() {
+            self.outcome = Outcome::Draw;
+        } 
     }
 
     /*const DIMS: &'static [i64] = &[1, 1, HEIGHT as i64, WIDTH as i64];
