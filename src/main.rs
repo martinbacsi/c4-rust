@@ -123,14 +123,14 @@ impl Node {
 
         if self.children.is_empty() {
             val = self.Expand(NN, pool);
-        } 
-
-        let cid = self.Select();
-        if self.terminal {
-            val = self.value;
         } else {
-            val = -self.children[cid].PlayOut(NN, pool);
-        } 
+            let cid = self.Select();
+            if self.terminal {
+                val = self.value;
+            } else {
+                val = -self.children[cid].PlayOut(NN, pool);
+            } 
+        }
         val
    }
 }
