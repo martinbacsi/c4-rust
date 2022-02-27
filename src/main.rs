@@ -15,7 +15,7 @@ use connect4::Outcome;
 use std::time::{Instant};
 use mcts::MCTS;
 use pool::Pool;
-use random::rand;
+use crate::random::dirichlet_noise;
 
 
 struct config {
@@ -46,6 +46,9 @@ const cpuct: f64 = 4.0;
 
 
 fn main() {
+  
+    let mut a = [1.; POLICY_SIZE];
+    dirichlet_noise(&mut a);
     let mcts = MCTS::new();
     println!("Hello, world!");
 }

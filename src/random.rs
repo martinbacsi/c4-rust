@@ -1,12 +1,7 @@
-use std::ops::{Mul, Add};
+use std::{ops::{Mul, Add}, arch::x86_64::_rdrand64_step};
 
 use crate::POLICY_SIZE;
 
-pub struct rand {
-    x: usize,
-    y: usize,
-    z: usize
-}
 
 const DIRICHLET_EPS:f64 = 0.3;
 const PI: f64 = 3.14159265358979323846264338327950288f64;
@@ -28,38 +23,22 @@ fn gammaPdf(x: f64, a: f64, b: f64) -> f64 {
     f64::exp(-x * b) * f64::powf(x, a - 1.0) * f64::powf(b, a) / gamm(a)
 }
 
-impl rand {
-    pub fn xorshf96(&mut self) -> usize {
-        self.x ^=  &self.x << 16;
-        self.x ^= self.x >> 5;
-        self.x ^= self.x << 1;
-        let mut t= self.x;
-        self.x = self.y;
-        self.y = self.z;
-        self.z = t ^ self.x ^ self.y;
-        self.z
+
+pub fn rand_gamma(x: f64, a: f64, b: f64) -> f64 {
+    let mut r:u64 = 0;
+    unsafe {
+        assert!(_rdrand64_step(&mut r) == 1);
     }
+    gammaPdf(x * r as f64 / u64::MAX as f64, a, b)
+}
 
-    pub fn rand_gamma(&mut self, x: f64, a: f64, b: f64) -> f64 {
-        gammaPdf(x * self.xorshf96() as f64 / usize::MAX as f64, a, b)
-    }
+pub fn dirichlet_noise(v: &mut [f64; POLICY_SIZE]) {
+    //TODO PARAM, CHECK
+    let dir: [f64; POLICY_SIZE] = [(); POLICY_SIZE].map(|_| rand_gamma(1.0, 0.5, 1.0) );
+    let sum: f64 = dir.iter().sum();
 
-    pub fn new() -> rand {
-        rand{
-            x:123456789, 
-            y:362436069, 
-            z:521288629
-        }
-    }  
-
-    pub fn dirichlet_noise(&mut self, v: &mut [f64; POLICY_SIZE]) {
-        //TODO PARAM, CHECK
-        let dir: [f64; POLICY_SIZE] = [(); POLICY_SIZE].map(|_| self.rand_gamma(1.0, 0.5, 0.5) );
-        let sum: f64 = dir.iter().sum();
-
-        for (i,e) in v.iter_mut().enumerate() {
-            e.mul(1. - DIRICHLET_EPS);
-            e.add(DIRICHLET_EPS * dir[i] / sum);
-        }
+    for i in 0..POLICY_SIZE {
+        v[i] = v[i] * (1. - DIRICHLET_EPS) + DIRICHLET_EPS * dir[i] / sum;
     }
 }
+
