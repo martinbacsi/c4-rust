@@ -4,6 +4,7 @@ mod nn;
 mod node;
 mod mcts;
 mod pool;
+mod random;
 use std::mem;
 
 use std::{collections::HashMap};
@@ -14,6 +15,7 @@ use connect4::Outcome;
 use std::time::{Instant};
 use mcts::MCTS;
 use pool::Pool;
+use random::rand;
 
 
 const W: usize = 9;
