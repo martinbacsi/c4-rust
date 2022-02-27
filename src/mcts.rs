@@ -3,6 +3,8 @@ use crate::Pool;
 use crate::Node;
 use crate::POLICY_SIZE;
 use crate::conf;
+use crate::random::dirichlet_noise;
+use crate::random::rand_float;
 use std::{collections::HashMap, mem, time::Instant};
 pub struct MCTS {
     pool: Pool,
@@ -49,7 +51,29 @@ impl MCTS {
         probs
     }
 
-    fn GetAction(&mut self, endt: Instant) -> u8 {
-        0
+    fn GetAction(&mut self, endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
+        let mut probs = self.GetMoveProbs(endt);
+        let mut a = 0;
+        if conf.selfplay {
+            dirichlet_noise(&mut probs);
+            let mut best = 0.;
+            self.root.children.iter().for_each(|c|{
+                let p = probs[c.game.lastMove as usize] * rand_float() ;
+                if p > best {
+                    best = p;
+                    a = c.game.lastMove;
+                } 
+            });
+        } else {
+            let b: &Box<Node> = self.root.children.iter().fold( &self.root.children[0], |a, c|{
+                if probs[c.game.lastMove as usize] > probs[a.game.lastMove as usize] {
+                    c
+                } else {
+                    a
+                }
+            });
+            a = b.game.lastMove;
+        }
+        (a, probs)
     }
 }

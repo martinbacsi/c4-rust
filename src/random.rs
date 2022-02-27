@@ -23,13 +23,20 @@ fn gammaPdf(x: f64, a: f64, b: f64) -> f64 {
     f64::exp(-x * b) * f64::powf(x, a - 1.0) * f64::powf(b, a) / gamm(a)
 }
 
-
-pub fn rand_gamma(x: f64, a: f64, b: f64) -> f64 {
+pub fn rand() -> u64 {
     let mut r:u64 = 0;
     unsafe {
         assert!(_rdrand64_step(&mut r) == 1);
     }
-    gammaPdf(x * r as f64 / u64::MAX as f64, a, b)
+    r
+}
+
+pub fn rand_float() -> f64 {
+    rand() as f64 / u64::MAX as f64
+}
+
+pub fn rand_gamma(x: f64, a: f64, b: f64) -> f64 {
+    gammaPdf(x * rand_float(), a, b)
 }
 
 pub fn dirichlet_noise(v: &mut [f64; POLICY_SIZE]) {
