@@ -131,7 +131,7 @@ impl Node {
                 val = -self.children[cid].PlayOut(NN, pool);
             } 
         }
-        self.UCB(val);
+        self.Update(val);
         val
    }
 }
@@ -154,6 +154,9 @@ impl Pool {
     }
 
     fn push(&mut self, mut ptr: Box<Node>) {
+        while ptr.children.len() > 0 {
+            self.nodes.push(ptr.children.pop().unwrap());
+        }
         ptr.reinit();
         self.nodes.push(ptr);
     }
@@ -171,6 +174,15 @@ impl MCTS {
             root: Box::new(Node::new())
         };
         mcts
+    }
+
+    fn UpdateWithAction(mut self, action: u8) {
+        let oldRoot = self.root;
+        for c in oldRoot.children {
+            if c.game.lastMove == action {
+                self.root = c
+            }
+        }
     }
 }
 

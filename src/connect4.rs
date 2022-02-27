@@ -79,7 +79,8 @@ pub struct Connect4 {
     op_bb: u64,
     height: [u8; WIDTH],
     player: u8,
-    pub outcome: Outcome
+    pub outcome: Outcome,
+    pub lastMove: u8
 }
 
 impl Connect4 {
@@ -101,7 +102,8 @@ impl Connect4 {
             op_bb: 0,
             height: [0; WIDTH],
             player: 0,
-            outcome: Outcome::None
+            outcome: Outcome::None,
+            lastMove: u8::max_value()
         }
     }
     
