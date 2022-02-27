@@ -43,8 +43,49 @@ impl DenseLayer {
     }
 }
 
-struct NN {
+pub struct NN {
     path: Vec<DenseLayer>
+}
+
+fn relu(v: &mut Vec<f32>) {
+    for i in v.iter_mut() {
+        *i = i.max(0.);
+    }
+}
+
+fn softmax(v: &mut Vec<f32>) {
+    assert!(v.len() == POLICY_SIZE);
+    let max = v.iter().fold(f32::NEG_INFINITY, |max, i| {if *i > max {*i} else {max}});
+    let mut sum: f32 = 0.;
+    v.iter_mut().for_each(|i| {
+        *i = f32::exp(*i - max); 
+        sum += *i;
+    });
+
+    v.iter_mut().for_each(|i| (*i) /= sum );
+}
+
+impl NN {
+    pub fn forward(&mut self, game: Connect4) -> NnOutput {
+        //todo dont reinit vec
+        let mut res_raw = vec![0.; POLICY_SIZE + 1];
+        //let mut res_raw: [f32; POLICY_SIZE + 1] = [1.; POLICY_SIZE + 1];
+        let mut res = NnOutput{p: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], v: 0.0};
+
+        for i in 0.. self.path.len() - 1 {
+            let (a, b) = self.path.split_at_mut(i + 1);
+            if i == 0 {
+                a[0].forward_game(&game,  &mut b[0].input);
+            } else {
+                a[0].forward(&mut b[0].input);
+            }
+            relu(&mut b[0].input);
+        }
+
+        self.path.last().unwrap().forward(&mut res_raw);
+        //TODO
+        res
+    }
 }
 
 pub struct NNManager {
