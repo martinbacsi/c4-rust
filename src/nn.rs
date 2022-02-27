@@ -17,7 +17,7 @@ impl NNManager {
     pub fn Get(&mut self, game: &Connect4) -> &NnOutput {
         let hash = game.hash();
         if !self.cache.contains_key(&hash) {
-            self.cache.insert(hash,NnOutput{p: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0., 0.0, 0.0], v: 0.0});
+            self.cache.insert(hash,NnOutput{p: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], v: 0.0});
         }
         &self.cache[&hash]
     }
