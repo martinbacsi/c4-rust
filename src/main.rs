@@ -1,11 +1,10 @@
 
-use std::cmp::max;
 use std::mem;
 use std::{collections::HashMap};
 use connect4::Connect4;
 use connect4::Outcome;
-
 mod connect4;
+use std::time::{Duration, Instant};
 
 const cpuct: f64 = 4.0;
 
@@ -14,6 +13,11 @@ const H: usize = 7;
 
 const POLICY_SIZE: usize = W;
 const INPUT_SIZE: usize = H * W * 2;
+
+struct config {
+    selfplay: bool,
+    iters: usize
+}
 
 struct NnOutput {
     p: [f32; POLICY_SIZE],
@@ -162,14 +166,32 @@ impl Pool {
 
 struct MCTS {
     pool: Pool,
-    root: Box<Node>
+    root: Box<Node>,
+    conf: config,
+    nn: NNManager
 }
 
 impl MCTS {
     fn new() -> MCTS {
+        #[cfg(target_os = "linux")]
+        let conf = config {
+            selfplay: false,
+            iters: usize::MAX
+        };
+
+        #[cfg(target_os = "windows")]
+        let conf = config {
+            selfplay: true,
+            iters: 2000
+        };
+
         let mcts = MCTS {
             pool: Pool::new(1000000),
-            root: Box::new(Node::new())
+            root: Box::new(Node::new()), 
+            conf: conf,
+            nn: NNManager{
+                cache: HashMap::new()
+            }
         };
         mcts
     }
@@ -185,6 +207,20 @@ impl MCTS {
         });
         mem::swap(newRoot.as_mut().unwrap(), &mut self.root);
         self.pool.push(newRoot.unwrap());
+    }
+
+    fn GetMoveProbs(&mut self, endt: Instant) -> [f64; POLICY_SIZE]{
+        let mut probs: [f64; POLICY_SIZE]  = [0.; POLICY_SIZE];
+        if self.conf.selfplay {
+            let mut i = 0;
+            while i < self.conf.iters && Instant::now() > endt {
+                self.root.PlayOut(&mut self.nn, &mut self.pool);
+                i += 1;
+            }
+        } 
+        let all_visits = (&self.root.children).iter().fold(0, |all_visits, x| all_visits + x.visits);
+        (&self.root.children).into_iter().for_each(|n| probs[n.game.lastMove as usize] = n.visits as f64 / all_visits as f64);
+        probs
     }
 }
 
