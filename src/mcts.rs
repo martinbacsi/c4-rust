@@ -3,6 +3,7 @@ use crate::Pool;
 use crate::Node;
 use crate::POLICY_SIZE;
 use crate::conf;
+use crate::nn::NN;
 use crate::random::dirichlet_noise;
 use crate::random::rand_float;
 use std::{collections::HashMap, mem, time::Instant};
@@ -14,13 +15,15 @@ pub struct MCTS {
 
 impl MCTS {
     pub fn new() -> MCTS {
-        let mcts = MCTS {
+        let mut mcts = MCTS {
             pool: Pool::new(1000000),
             root: Box::new(Node::new()), 
             nn: NNManager{
-                cache: HashMap::new()
+                cache: HashMap::new(),
+                nn: NN::new()
             }
         };
+        mcts.nn.nn.read_weights("best.w32");
         mcts
     }
 

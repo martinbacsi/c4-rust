@@ -87,9 +87,9 @@ impl NN {
         for i in 0.. self.path.len() - 1 {
             let (a, b) = self.path.split_at_mut(i + 1);
             if i == 0 {
-                a[0].forward_game(&game,  &mut b[0].input);
+                a.last().unwrap().forward_game(&game,  &mut b[0].input);
             } else {
-                a[0].forward(&mut b[0].input);
+                a.last().unwrap().forward(&mut b[0].input);
             }
             relu(&mut b[0].input);
         }
@@ -137,7 +137,7 @@ impl NN {
         let mut id = 0;
         for i in 0..self.path.len() {
             let next_size = if i == self.path.len() - 1 { POLICY_SIZE + 1} else {self.path[i + 1].input.len()};
-            let weights_size = self.path[i].weights.len() * next_size;
+            let weights_size = self.path[i].input.len() * next_size;
             self.path[i].weights.resize(weights_size, 0.0);
             self.path[i].bias.resize(next_size, 0.0);
             for j in 0..weights_size {
@@ -154,14 +154,15 @@ impl NN {
 }
 
 pub struct NNManager {
-    pub cache: HashMap<usize, NnOutput>
+    pub cache: HashMap<usize, NnOutput>,
+    pub nn: NN
 }
 
 impl NNManager {
     pub fn Get(&mut self, game: &Connect4) -> &NnOutput {
         let hash = game.hash();
         if !self.cache.contains_key(&hash) {
-            self.cache.insert(hash,NnOutput{p: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0], v: 0.0});
+            self.cache.insert(hash,self.nn.forward(game));
         }
         &self.cache[&hash]
     }

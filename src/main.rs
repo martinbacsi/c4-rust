@@ -11,6 +11,7 @@ use connect4::Outcome;
 use std::time::{Instant, Duration};
 use mcts::MCTS;
 use pool::Pool;
+use crate::nn::NN;
 use crate::random::dirichlet_noise;
 
 
@@ -42,10 +43,7 @@ const cpuct: f64 = 4.0;
 
 
 fn main() {
-    let mut a = [1.; POLICY_SIZE];
-    dirichlet_noise(&mut a);
     let mut mcts = MCTS::new();
-
     let (a, b) = mcts.GetAction(Instant::now() + Duration::from_millis(10000));
     println!("Hello, world!");
 }
