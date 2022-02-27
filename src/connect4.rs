@@ -108,8 +108,12 @@ impl Connect4 {
     }
     
     fn full (self) -> bool {
+        self.turn() == (WIDTH * HEIGHT) as i32      
+    }
+
+    pub fn turn(self) -> i32 {
         unsafe {
-            _popcnt64((self.my_bb | self.op_bb) as i64) == (WIDTH * HEIGHT) as i32
+            _popcnt64((self.my_bb | self.op_bb) as i64)
         }
     }
 

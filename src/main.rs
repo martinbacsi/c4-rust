@@ -4,8 +4,7 @@ use std::{collections::HashMap};
 use connect4::Connect4;
 use connect4::Outcome;
 mod connect4;
-use std::time::{Duration, Instant};
-
+use std::time::{Instant};
 const cpuct: f64 = 4.0;
 
 const W: usize = 9;
@@ -25,6 +24,35 @@ struct NnOutput {
 }
 struct NN {
 
+}
+
+struct random {
+    x: usize,
+    y: usize,
+    z: usize
+}
+
+impl random {
+    pub fn xorshf96(&self) -> usize {
+        self.x ^= self.x << 16;
+        self.x ^= self.x >> 5;
+        self.x ^= self.x << 1;
+        let t = 0;
+    
+        t = self.x;
+        self.x = self.y;
+        self.y = self.z;
+        self.z = t ^ self.x ^ self.y;
+        self.z
+    }
+
+    pub fn new() -> random {
+        random{
+            x:123456789, 
+            y:362436069, 
+            z:521288629
+        }
+    }  
 }
 
 struct NNManager {
@@ -221,6 +249,10 @@ impl MCTS {
         let all_visits = (&self.root.children).iter().fold(0, |all_visits, x| all_visits + x.visits);
         (&self.root.children).into_iter().for_each(|n| probs[n.game.lastMove as usize] = n.visits as f64 / all_visits as f64);
         probs
+    }
+
+    fn GetAction(&mut self, endt: Instant) -> u8 {
+        0
     }
 }
 
