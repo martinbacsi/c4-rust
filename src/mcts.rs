@@ -41,7 +41,7 @@ impl MCTS {
         let mut probs: [f64; POLICY_SIZE]  = [0.; POLICY_SIZE];
         if conf.selfplay {
             let mut i = 0;
-            while i < conf.iters && Instant::now() > endt {
+            while i < conf.iters && Instant::now() < endt {
                 self.root.PlayOut(&mut self.nn, &mut self.pool);
                 i += 1;
             }
@@ -51,7 +51,7 @@ impl MCTS {
         probs
     }
 
-    fn GetAction(&mut self, endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
+    pub fn GetAction(&mut self, endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
         let mut probs = self.GetMoveProbs(endt);
         let mut a = 0;
         if conf.selfplay {

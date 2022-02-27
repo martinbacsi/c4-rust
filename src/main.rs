@@ -7,12 +7,13 @@ mod pool;
 mod random;
 use std::mem;
 
+use std::ops::Add;
 use std::{collections::HashMap};
 use nn::NNManager;
 use node::Node;
 use connect4::Connect4;
 use connect4::Outcome;
-use std::time::{Instant};
+use std::time::{Instant, Duration};
 use mcts::MCTS;
 use pool::Pool;
 use crate::random::dirichlet_noise;
@@ -49,6 +50,8 @@ fn main() {
   
     let mut a = [1.; POLICY_SIZE];
     dirichlet_noise(&mut a);
-    let mcts = MCTS::new();
+    let mut mcts = MCTS::new();
+
+    let (a, b) = mcts.GetAction(Instant::now() + Duration::from_millis(10000));
     println!("Hello, world!");
 }

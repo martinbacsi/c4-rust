@@ -122,7 +122,7 @@ impl Connect4 {
         self.height[action as usize] += 1;
         std::mem::swap(&mut self.my_bb, &mut self.op_bb);
         self.player = 1 - self.player;
-
+        self.lastMove = action;
         if won(self.op_bb) {
             self.outcome = Outcome::Win;
         } else if self.full() {
