@@ -44,7 +44,7 @@ pub struct Node {
     value: f32,
     Q: f64,
     P: f32,
-    children: Vec<Box<Node>>,
+    pub children: Vec<Box<Node>>,
     game: Connect4
 }
 
@@ -154,9 +154,7 @@ impl Pool {
     }
 
     fn push(&mut self, mut ptr: Box<Node>) {
-        while ptr.children.len() > 0 {
-            self.nodes.push(ptr.children.pop().unwrap());
-        }
+        ptr.children.drain(..).map(|n|self.push(n));
         ptr.reinit();
         self.nodes.push(ptr);
     }
@@ -176,13 +174,17 @@ impl MCTS {
         mcts
     }
 
-    fn UpdateWithAction(mut self, action: u8) {
-        let oldRoot = self.root;
-        for c in oldRoot.children {
+    fn UpdateWithAction(&mut self, action: u8) {
+        let mut newRoot = Option::None;
+        self.root.children.drain(..).map(| c|{
             if c.game.lastMove == action {
-                self.root = c
+                newRoot = Some(c);
+            } else {
+                self.pool.push(c);
             }
-        }
+        });
+        mem::swap(newRoot.as_mut().unwrap(), &mut self.root);
+        self.pool.push(newRoot.unwrap());
     }
 }
 
