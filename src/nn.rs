@@ -53,8 +53,7 @@ fn relu(v: &mut Vec<f32>) {
     }
 }
 
-fn softmax(v: &mut Vec<f32>) {
-    assert!(v.len() == POLICY_SIZE);
+fn softmax(v: &mut [f32; POLICY_SIZE]) {
     let max = v.iter().fold(f32::NEG_INFINITY, |max, i| {if *i > max {*i} else {max}});
     let mut sum: f32 = 0.;
     v.iter_mut().for_each(|i| {
@@ -83,7 +82,12 @@ impl NN {
         }
 
         self.path.last().unwrap().forward(&mut res_raw);
-        //TODO
+        
+        for i in 0..POLICY_SIZE {
+           res.p[i] = res_raw[i]; 
+        }
+        res.v = f32::tanh(res_raw[POLICY_SIZE]);
+        softmax(&mut res.p);
         res
     }
 }
