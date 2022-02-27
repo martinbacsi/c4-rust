@@ -66,7 +66,7 @@ fn softmax(v: &mut Vec<f32>) {
 }
 
 impl NN {
-    pub fn forward(&mut self, game: Connect4) -> NnOutput {
+    pub fn forward(&mut self, game: &Connect4) -> NnOutput {
         //todo dont reinit vec
         let mut res_raw = vec![0.; POLICY_SIZE + 1];
         //let mut res_raw: [f32; POLICY_SIZE + 1] = [1.; POLICY_SIZE + 1];
