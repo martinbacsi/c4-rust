@@ -2,37 +2,19 @@ use crate::NNManager;
 use crate::Pool;
 use crate::Node;
 use crate::POLICY_SIZE;
+use crate::conf;
 use std::{collections::HashMap, mem, time::Instant};
-struct config {
-    selfplay: bool,
-    iters: usize
-}
-
 pub struct MCTS {
     pool: Pool,
     root: Box<Node>,
-    conf: config,
     nn: NNManager
 }
 
 impl MCTS {
     pub fn new() -> MCTS {
-        #[cfg(target_os = "linux")]
-        let conf = config {
-            selfplay: false,
-            iters: usize::MAX
-        };
-
-        #[cfg(target_os = "windows")]
-        let conf = config {
-            selfplay: true,
-            iters: 2000
-        };
-
         let mcts = MCTS {
             pool: Pool::new(1000000),
             root: Box::new(Node::new()), 
-            conf: conf,
             nn: NNManager{
                 cache: HashMap::new()
             }
@@ -55,9 +37,9 @@ impl MCTS {
 
     fn GetMoveProbs(&mut self, endt: Instant) -> [f64; POLICY_SIZE]{
         let mut probs: [f64; POLICY_SIZE]  = [0.; POLICY_SIZE];
-        if self.conf.selfplay {
+        if conf.selfplay {
             let mut i = 0;
-            while i < self.conf.iters && Instant::now() > endt {
+            while i < conf.iters && Instant::now() > endt {
                 self.root.PlayOut(&mut self.nn, &mut self.pool);
                 i += 1;
             }

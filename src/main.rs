@@ -18,6 +18,24 @@ use pool::Pool;
 use random::rand;
 
 
+struct config {
+    selfplay: bool,
+    iters: usize
+}
+
+#[cfg(target_os = "linux")]
+const conf: config = config {
+    selfplay: false,
+    iters: usize::MAX
+};
+
+#[cfg(target_os = "windows")]
+const conf: config = config {
+    selfplay: true,
+    iters: 2000
+};
+
+
 const W: usize = 9;
 const H: usize = 7;
 
