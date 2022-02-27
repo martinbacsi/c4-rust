@@ -75,8 +75,8 @@ pub enum Outcome {
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Connect4 {
-    my_bb: u64,
-    op_bb: u64,
+    pub my_bb: u64,
+    pub op_bb: u64,
     height: [u8; WIDTH],
     player: u8,
     pub outcome: Outcome,

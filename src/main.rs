@@ -1,14 +1,9 @@
-
 mod connect4;
 mod nn;
 mod node;
 mod mcts;
 mod pool;
 mod random;
-use std::mem;
-
-use std::ops::Add;
-use std::{collections::HashMap};
 use nn::NNManager;
 use node::Node;
 use connect4::Connect4;
@@ -47,7 +42,6 @@ const cpuct: f64 = 4.0;
 
 
 fn main() {
-  
     let mut a = [1.; POLICY_SIZE];
     dirichlet_noise(&mut a);
     let mut mcts = MCTS::new();
