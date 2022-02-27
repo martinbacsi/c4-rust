@@ -1,9 +1,14 @@
+use std::ops::{Mul, Add};
+
+use crate::POLICY_SIZE;
+
 pub struct rand {
     x: usize,
     y: usize,
     z: usize
 }
 
+const DIRICHLET_EPS:f64 = 0.3;
 const PI: f64 = 3.14159265358979323846264338327950288f64;
 //http://www.rskey.org/gamma.htm   
 fn gamm(x: f64) -> f64 {
@@ -46,4 +51,15 @@ impl rand {
             z:521288629
         }
     }  
+
+    pub fn dirichlet_noise(&mut self, v: &mut [f64; POLICY_SIZE]) {
+        //TODO PARAM, CHECK
+        let dir: [f64; POLICY_SIZE] = [(); POLICY_SIZE].map(|_| self.rand_gamma(1.0, 0.5, 0.5) );
+        let sum: f64 = dir.iter().sum();
+
+        for (i,e) in v.iter_mut().enumerate() {
+            e.mul(1. - DIRICHLET_EPS);
+            e.add(DIRICHLET_EPS * dir[i] / sum);
+        }
+    }
 }
