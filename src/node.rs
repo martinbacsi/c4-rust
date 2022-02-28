@@ -1,9 +1,9 @@
-use crate::Connect4;
-use crate::POLICY_SIZE;
 use crate::cpuct;
+use crate::Connect4;
 use crate::NNManager;
-use crate::Pool;
 use crate::Outcome;
+use crate::Pool;
+use crate::POLICY_SIZE;
 
 #[derive(Clone)]
 pub struct Node {
@@ -13,11 +13,11 @@ pub struct Node {
     Q: f64,
     P: f32,
     pub children: Vec<Box<Node>>,
-    pub game: Connect4
+    pub game: Connect4,
 }
 
 impl Node {
-    pub fn new()-> Self  {
+    pub fn new() -> Self {
         Node {
             terminal: false,
             visits: 0,
@@ -25,11 +25,11 @@ impl Node {
             Q: 0.,
             P: 0.,
             children: Vec::new(),
-            game: Connect4::new()
+            game: Connect4::new(),
         }
     }
 
-    pub fn reinit(&mut self){
+    pub fn reinit(&mut self) {
         *self = Node::new();
     }
 
@@ -41,7 +41,7 @@ impl Node {
         if self.terminal {
             0 as usize
         } else {
-            let mult = cpuct * (self.visits as f64).sqrt();
+            let mult = (cpuct * self.visits as f64).sqrt();
             let mut best_val = f64::NEG_INFINITY;
             let mut best = 0;
             self.terminal = true;
@@ -52,18 +52,22 @@ impl Node {
                     if v > self.value {
                         self.value = v;
                     }
+                    if c.value == 1.0 {
+                        self.terminal = true;
+                        self.value = -1.0;
+                    }
                 } else {
                     self.terminal = false;
                     let val = c.ucb(mult);
                     if val > best_val {
-                        best_val = val; 
+                        best_val = val;
                         best = cid;
                     }
                 }
             }
             best
-        } 
-   }
+        }
+    }
 
     fn expand(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
         let nnval = NN.get(&self.game);
@@ -75,23 +79,31 @@ impl Node {
             self.children.push(n);
         });
         nnval.v
-   }
+    }
 
-   fn update(&mut self, value: f32) {
+    fn update(&mut self, value: f32) {
         self.visits += 1;
         self.Q += value as f64;
-   }
+    }
 
-   pub fn prob_vector(& self) -> [f64; POLICY_SIZE] {
+    pub fn prob_vector(&self) -> [f64; POLICY_SIZE] {
         let mut probs: [f64; POLICY_SIZE] = [0.0; POLICY_SIZE];
-        let all_visits = (&self.children).iter().fold(0, |all_visits, x| all_visits + x.visits);
-        (&self.children).into_iter().for_each(|n| probs[n.game.last_move as usize] = n.visits as f64 / all_visits as f64);
+        let all_visits = (&self.children)
+            .iter()
+            .fold(0, |all_visits, x| all_visits + x.visits);
+        (&self.children)
+            .into_iter()
+            .for_each(|n| probs[n.game.last_move as usize] = n.visits as f64 / all_visits as f64);
         probs
-   }
+    }
 
-   pub fn playout(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
+    pub fn playout(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
         if self.game.outcome != Outcome::None {
-            self.value =  if self.game.outcome == Outcome::Win {1.}  else {0.};
+            self.value = if self.game.outcome == Outcome::Win {
+                1.
+            } else {
+                0.
+            };
             self.terminal = true;
         }
         let val;
@@ -104,9 +116,9 @@ impl Node {
                 val = self.value;
             } else {
                 val = -self.children[cid].playout(NN, pool);
-            } 
+            }
         }
         self.update(val);
         val
-   }
+    }
 }
