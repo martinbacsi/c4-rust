@@ -85,12 +85,12 @@ impl MCTS {
 
     pub fn play_against(&mut self) {
         while self.root.game.outcome == Outcome::None {
-            let (a, p) = self.get_move_probs_play( Instant::now() + Duration::from_millis(50));
+            let (a, _) = self.get_move_probs_play( Instant::now() + Duration::from_millis(50));
             self.update_with_action(a);
 
             self.root.game.print();
             let mut buffer = String::new();
-            std::io::stdin().read_line(&mut buffer);
+            std::io::stdin().read_line(&mut buffer).expect("read error");
             let n = buffer.trim().parse::<u8>().unwrap();
 
             self.update_with_action(n);
