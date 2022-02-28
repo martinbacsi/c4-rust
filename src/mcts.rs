@@ -7,7 +7,9 @@ use crate::connect4::Outcome;
 use crate::nn::NN;
 use crate::random::dirichlet_noise;
 use crate::random::rand_float;
+use std::time::Duration;
 use std::{collections::HashMap, mem, time::Instant};
+use std::io;
 pub struct MCTS {
     pool: Pool,
     root: Box<Node>,
@@ -79,5 +81,20 @@ impl MCTS {
             let (a, p) = self.get_move_probs_selfplay();
             self.UpdateWithAction(a);
         }
+    }
+
+    pub fn play_against(&mut self) {
+        while self.root.game.outcome == Outcome::None {
+            let (a, p) = self.get_move_probs_play( Instant::now() + Duration::from_millis(50));
+            self.UpdateWithAction(a);
+
+            self.root.game.print();
+            let mut buffer = String::new();
+            std::io::stdin().read_line(&mut buffer);
+            let n = buffer.trim().parse::<u8>().unwrap();
+
+            self.UpdateWithAction(n);
+        }
+        self.root.game.print();
     }
 }

@@ -155,31 +155,16 @@ impl Connect4 {
         s
     }*/
 
-    /*fn print(&self) {
-        if self.is_over() {
-            println!("{:?} won", self.winner());
-        } else {
-            println!("{:?} to play", self.player);
-            println!(
-                "Available Actions: {:?}",
-                self.iter_actions().collect::<Vec<Column>>()
-            );
-        }
-
-        let (my_char, op_char) = match self.player {
-            PlayerId::Black => ("B", "r"),
-            PlayerId::Red => ("r", "B"),
-        };
-
+    pub fn print(&self) {
         for row in (0..HEIGHT).rev() {
             for col in 0..WIDTH {
                 let index = 1 << (row + HEIGHT * col);
                 print!(
                     "{} ",
                     if self.my_bb & index != 0 {
-                        my_char
+                        "O"
                     } else if self.op_bb & index != 0 {
-                        op_char
+                        "X"
                     } else {
                         "."
                     }
@@ -187,7 +172,8 @@ impl Connect4 {
             }
             println!();
         }
-    }*/
+        println!("0 1 2 3 4 5 6 7 8");
+    }
 }
 
 /*#[cfg(test)]

@@ -44,6 +44,6 @@ const cpuct: f64 = 4.0;
 
 fn main() {
     let mut mcts = MCTS::new();
-    mcts.self_play();
+    mcts.play_against();
     println!("Hello, world!");
 }
