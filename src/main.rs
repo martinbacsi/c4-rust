@@ -44,6 +44,6 @@ const cpuct: f64 = 4.0;
 
 fn main() {
     let mut mcts = MCTS::new();
-    let (a, b) = mcts.GetAction(Instant::now() + Duration::from_millis(10000));
+    mcts.self_play();
     println!("Hello, world!");
 }

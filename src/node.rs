@@ -1,4 +1,5 @@
 use crate::Connect4;
+use crate::POLICY_SIZE;
 use crate::cpuct;
 use crate::NNManager;
 use crate::Pool;
@@ -79,6 +80,13 @@ impl Node {
    fn Update(&mut self, value: f32) {
         self.visits += 1;
         self.Q += value as f64;
+   }
+
+   pub fn prob_vector(& self) -> [f64; POLICY_SIZE] {
+        let mut probs: [f64; POLICY_SIZE] = [0.0; POLICY_SIZE];
+        let all_visits = (&self.children).iter().fold(0, |all_visits, x| all_visits + x.visits);
+        (&self.children).into_iter().for_each(|n| probs[n.game.lastMove as usize] = n.visits as f64 / all_visits as f64);
+        probs
    }
 
    pub fn PlayOut(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {

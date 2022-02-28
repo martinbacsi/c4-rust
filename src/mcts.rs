@@ -3,6 +3,7 @@ use crate::Pool;
 use crate::Node;
 use crate::POLICY_SIZE;
 use crate::conf;
+use crate::connect4::Outcome;
 use crate::nn::NN;
 use crate::random::dirichlet_noise;
 use crate::random::rand_float;
@@ -29,54 +30,54 @@ impl MCTS {
 
     fn UpdateWithAction(&mut self, action: u8) {
         let mut newRoot = Option::None;
-        self.root.children.drain(..).map(| c|{
-            if c.game.lastMove == action {
-                newRoot = Some(c);
+        while self.root.children.len() > 0 {
+            if self.root.children.last().unwrap().game.lastMove == action {
+                newRoot = Some(self.root.children.pop().unwrap());   
             } else {
-                self.pool.push(c);
+                self.pool.push(self.root.children.pop().unwrap());
             }
-        });
+        }
         mem::swap(newRoot.as_mut().unwrap(), &mut self.root);
         self.pool.push(newRoot.unwrap());
     }
 
-    fn GetMoveProbs(&mut self, endt: Instant) -> [f64; POLICY_SIZE]{
-        let mut probs: [f64; POLICY_SIZE]  = [0.; POLICY_SIZE];
-        if conf.selfplay {
-            let mut i = 0;
-            while i < conf.iters && Instant::now() < endt {
-                self.root.PlayOut(&mut self.nn, &mut self.pool);
-                i += 1;
-            }
-        } 
-        let all_visits = (&self.root.children).iter().fold(0, |all_visits, x| all_visits + x.visits);
-        (&self.root.children).into_iter().for_each(|n| probs[n.game.lastMove as usize] = n.visits as f64 / all_visits as f64);
-        probs
+    fn get_move_probs_selfplay(&mut self) -> (u8, [f64; POLICY_SIZE]) {
+        for i in 0..conf.iters {
+            self.root.PlayOut(&mut self.nn, &mut self.pool);
+        }
+        let mut p = self.root.prob_vector();
+        dirichlet_noise(&mut p);
+
+        let mut best = 0.0;
+        let mut a = u8::MAX;
+        self.root.children.iter().for_each(|c| {
+            let d = p[c.game.lastMove as usize] * rand_float();
+            if d > best {
+                best = d;
+                a = c.game.lastMove;
+            } 
+        });
+        (a, p)
     }
 
-    pub fn GetAction(&mut self, endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
-        let mut probs = self.GetMoveProbs(endt);
-        let mut a = 0;
-        if conf.selfplay {
-            dirichlet_noise(&mut probs);
-            let mut best = 0.;
-            self.root.children.iter().for_each(|c|{
-                let p = probs[c.game.lastMove as usize] * rand_float() ;
-                if p > best {
-                    best = p;
-                    a = c.game.lastMove;
-                } 
-            });
-        } else {
-            let b: &Box<Node> = self.root.children.iter().fold( &self.root.children[0], |a, c|{
-                if probs[c.game.lastMove as usize] > probs[a.game.lastMove as usize] {
-                    c
-                } else {
-                    a
-                }
-            });
-            a = b.game.lastMove;
+    fn get_move_probs_play(&mut self,  endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
+        while Instant::now() < endt {
+            self.root.PlayOut(&mut self.nn, &mut self.pool);
         }
-        (a, probs)
+        let p = self.root.prob_vector();
+        let mut a = self.root.children[0].game.lastMove;
+        self.root.children.iter().for_each(|c|{
+            if p[c.game.lastMove as usize] > p[self.root.children[a as usize].game.lastMove as usize] {
+                a = c.game.lastMove;
+            }
+        });
+        (a, p)
+    }
+
+    pub fn self_play(&mut self) {
+        while self.root.game.outcome == Outcome::None {
+            let (a, p) = self.get_move_probs_selfplay();
+            self.UpdateWithAction(a);
+        }
     }
 }
