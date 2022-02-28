@@ -55,6 +55,7 @@ impl Node {
                     if c.value == 1.0 {
                         self.terminal = true;
                         self.value = -1.0;
+                        cid
                     }
                 } else {
                     self.terminal = false;
