@@ -55,7 +55,7 @@ impl Node {
                     if c.value == 1.0 {
                         self.terminal = true;
                         self.value = -1.0;
-                        cid
+                        break;
                     }
                 } else {
                     self.terminal = false;
@@ -89,12 +89,28 @@ impl Node {
 
     pub fn prob_vector(&self) -> [f64; POLICY_SIZE] {
         let mut probs: [f64; POLICY_SIZE] = [0.0; POLICY_SIZE];
-        let all_visits = (&self.children)
-            .iter()
-            .fold(0, |all_visits, x| all_visits + x.visits);
-        (&self.children)
-            .into_iter()
-            .for_each(|n| probs[n.game.last_move as usize] = n.visits as f64 / all_visits as f64);
+        if self.terminal {
+            let max = self
+                .children
+                .iter()
+                .fold(0.0, |max, c| if c.value > max { c.value } else { max });
+            let mut sum = 0.0;
+            for c in self.children.iter() {
+                if c.value == max {
+                    sum += 1.0;
+                    probs[c.game.last_move as usize] = 1.0;
+                }
+            }
+            probs.iter_mut().for_each(|p| *p /= sum);
+        } else {
+            let all_visits = (&self.children)
+                .iter()
+                .fold(0, |all_visits, x| all_visits + x.visits);
+            (&self.children).into_iter().for_each(|n| {
+                probs[n.game.last_move as usize] = n.visits as f64 / all_visits as f64
+            });
+        }
+
         probs
     }
 
