@@ -80,7 +80,7 @@ pub struct Connect4 {
     height: [u8; WIDTH],
     player: u8,
     pub outcome: Outcome,
-    pub lastMove: u8
+    pub last_move: u8
 }
 
 impl Connect4 {
@@ -91,7 +91,7 @@ impl Connect4 {
         hasher.finish() as usize
     }
 
-    pub fn OnValidActions<T>(&self, func: &mut T)    
+    pub fn on_valid_action<T>(&self, func: &mut T)    
     where T: FnMut(u8) {
         (0..WIDTH).for_each(| i| {if self.height[i] < HEIGHT as u8  {func(i as u8)};});
     }
@@ -103,7 +103,7 @@ impl Connect4 {
             height: [0; WIDTH],
             player: 0,
             outcome: Outcome::None,
-            lastMove: u8::max_value()
+            last_move: u8::max_value()
         }
     }
     
@@ -122,7 +122,7 @@ impl Connect4 {
         self.height[action as usize] += 1;
         std::mem::swap(&mut self.my_bb, &mut self.op_bb);
         self.player = 1 - self.player;
-        self.lastMove = action;
+        self.last_move = action;
         if won(self.op_bb) {
             self.outcome = Outcome::Win;
         } else if self.full() {

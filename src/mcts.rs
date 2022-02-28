@@ -30,22 +30,22 @@ impl MCTS {
         mcts
     }
 
-    fn UpdateWithAction(&mut self, action: u8) {
-        let mut newRoot = Option::None;
-        while self.root.children.len() > 0 {
-            if self.root.children.last().unwrap().game.lastMove == action {
-                newRoot = Some(self.root.children.pop().unwrap());   
+    fn update_with_action(&mut self, action: u8) {
+        let mut new_root = Option::None;
+        self.root.children.drain(..).for_each(|c: Box<Node>| {
+            if c.as_ref().game.last_move == action {
+                new_root = Some(c);
             } else {
-                self.pool.push(self.root.children.pop().unwrap());
+                self.pool.push(c);
             }
-        }
-        mem::swap(newRoot.as_mut().unwrap(), &mut self.root);
-        self.pool.push(newRoot.unwrap());
+        });
+        mem::swap(new_root.as_mut().unwrap(), &mut self.root);
+        self.pool.push(new_root.unwrap());
     }
 
     fn get_move_probs_selfplay(&mut self) -> (u8, [f64; POLICY_SIZE]) {
         for i in 0..conf.iters {
-            self.root.PlayOut(&mut self.nn, &mut self.pool);
+            self.root.playout(&mut self.nn, &mut self.pool);
         }
         let mut p = self.root.prob_vector();
         dirichlet_noise(&mut p);
@@ -53,10 +53,10 @@ impl MCTS {
         let mut best = 0.0;
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
-            let d = p[c.game.lastMove as usize] * rand_float();
+            let d = p[c.game.last_move as usize] * rand_float();
             if d > best {
                 best = d;
-                a = c.game.lastMove;
+                a = c.game.last_move;
             } 
         });
         (a, p)
@@ -64,13 +64,13 @@ impl MCTS {
 
     fn get_move_probs_play(&mut self,  endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
         while Instant::now() < endt {
-            self.root.PlayOut(&mut self.nn, &mut self.pool);
+            self.root.playout(&mut self.nn, &mut self.pool);
         }
         let p = self.root.prob_vector();
-        let mut a = self.root.children[0].game.lastMove;
+        let mut a = self.root.children[0].game.last_move;
         self.root.children.iter().for_each(|c|{
-            if p[c.game.lastMove as usize] > p[self.root.children[a as usize].game.lastMove as usize] {
-                a = c.game.lastMove;
+            if p[c.game.last_move as usize] > p[self.root.children[a as usize].game.last_move as usize] {
+                a = c.game.last_move;
             }
         });
         (a, p)
@@ -79,21 +79,21 @@ impl MCTS {
     pub fn self_play(&mut self) {
         while self.root.game.outcome == Outcome::None {
             let (a, p) = self.get_move_probs_selfplay();
-            self.UpdateWithAction(a);
+            self.update_with_action(a);
         }
     }
 
     pub fn play_against(&mut self) {
         while self.root.game.outcome == Outcome::None {
             let (a, p) = self.get_move_probs_play( Instant::now() + Duration::from_millis(50));
-            self.UpdateWithAction(a);
+            self.update_with_action(a);
 
             self.root.game.print();
             let mut buffer = String::new();
             std::io::stdin().read_line(&mut buffer);
             let n = buffer.trim().parse::<u8>().unwrap();
 
-            self.UpdateWithAction(n);
+            self.update_with_action(n);
         }
         self.root.game.print();
     }

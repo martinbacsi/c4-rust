@@ -159,7 +159,7 @@ pub struct NNManager {
 }
 
 impl NNManager {
-    pub fn Get(&mut self, game: &Connect4) -> &NnOutput {
+    pub fn get(&mut self, game: &Connect4) -> &NnOutput {
         let hash = game.hash();
         if !self.cache.contains_key(&hash) {
             self.cache.insert(hash,self.nn.forward(game));
