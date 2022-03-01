@@ -46,8 +46,8 @@ const cpuct: f64 = 4.0;
 fn main() {
     //let (s, v) = encode_b16k("best.w32");
     let mut mcts = MCTS::new();
-    #[cfg(target_os = "windows")]
+    //#[cfg(target_os = "windows")]
     mcts.play_against();
-    #[cfg(target_os = "linux")]
-    mcts.cg();
+    //#[cfg(target_os = "linux")]
+    //mcts.cg();
 }
