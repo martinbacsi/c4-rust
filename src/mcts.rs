@@ -7,7 +7,9 @@ use crate::NNManager;
 use crate::Node;
 use crate::Pool;
 use crate::POLICY_SIZE;
+use std::fmt::Result;
 use std::io;
+use std::num::ParseIntError;
 use std::time::Duration;
 use std::{collections::HashMap, mem, time::Instant};
 
@@ -32,7 +34,7 @@ impl MCTS {
                 nn: NN::new(),
             },
         };
-        mcts.nn.nn.read_weights("best.w32");
+        mcts.nn.nn.read_weights();
         mcts
     }
 
@@ -73,15 +75,13 @@ impl MCTS {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
         let p = self.root.prob_vector();
-        let mut a = self.root.children[0].game.last_move;
+        let mut a = &self.root.children[0];
         self.root.children.iter().for_each(|c| {
-            if p[c.game.last_move as usize]
-                > p[self.root.children[a as usize].game.last_move as usize]
-            {
-                a = c.game.last_move;
+            if p[c.game.last_move as usize] > p[a.game.last_move as usize] {
+                a = c;
             }
         });
-        (a, p)
+        (a.game.last_move, p)
     }
 
     pub fn self_play(&mut self) {
@@ -94,23 +94,38 @@ impl MCTS {
     pub fn play_against(&mut self) {
         self.root.playout(&mut self.nn, &mut self.pool);
         for i in 0..64 {
-            self.root.game.print();
             if i % 2 == 0 {
-                let mut buffer = String::new();
-                std::io::stdin().read_line(&mut buffer).expect("read error");
-                let a = buffer.trim().parse::<u8>().unwrap();
-                self.update_with_action(a);
+                self.root.game.print();
+                loop {
+                    let mut buffer = String::new();
+                    std::io::stdin().read_line(&mut buffer).expect("read error");
+                    let a_read = buffer.trim().parse::<u8>();
+                    if a_read.is_ok() {
+                        let a = a_read.unwrap();
+                        if self
+                            .root
+                            .children
+                            .iter()
+                            .find(|c| c.game.last_move == a)
+                            .is_some()
+                        {
+                            self.update_with_action(a);
+                            break;
+                        }
+                    }
+                    println!("hülye vagy");
+                }
             } else {
                 let (a, _) = self.get_move_probs_play(Instant::now() + Duration::from_millis(1000));
                 self.update_with_action(a);
             }
             if self.root.game.outcome != Outcome::None {
+                self.root.game.print();
                 if i % 2 == 0 {
                     println!("nice!");
                 } else {
                     println!("LOL XDDDD");
                 }
-                self.root.game.print();
                 break;
             }
         }

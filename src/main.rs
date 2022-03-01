@@ -1,9 +1,13 @@
 mod connect4;
+mod decode_base16k;
 mod mcts;
 mod nn;
+mod nn_string;
 mod node;
 mod pool;
 mod random;
+use crate::decode_base16k::decode_b16k;
+use crate::decode_base16k::encode_b16k;
 use crate::nn::NN;
 use crate::random::dirichlet_noise;
 use connect4::Connect4;
@@ -40,10 +44,10 @@ const INPUT_SIZE: usize = H * W * 2;
 const cpuct: f64 = 4.0;
 
 fn main() {
+    //let (s, v) = encode_b16k("best.w32");
     let mut mcts = MCTS::new();
     #[cfg(target_os = "windows")]
     mcts.play_against();
     #[cfg(target_os = "linux")]
     mcts.cg();
-    println!("Hello, world!");
 }
