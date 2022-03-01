@@ -41,7 +41,7 @@ impl Node {
         if self.terminal {
             0 as usize
         } else {
-            let mult = (cpuct * self.visits as f64).sqrt();
+            let mult = cpuct * (self.visits as f64).sqrt();
             let mut best_val = f64::NEG_INFINITY;
             let mut best = 0;
             self.terminal = true;
