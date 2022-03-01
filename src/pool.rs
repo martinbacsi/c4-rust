@@ -10,19 +10,23 @@ impl Pool {
             nodes: Vec::new(),
             size: cap,
         };
-        p.nodes.resize(cap, Box::new(Node::new()));
+        p.grow();
         p
+    }
+
+    pub fn grow(&mut self) {
+        self.nodes.resize(self.size, Box::new(Node::new()));
     }
 
     pub fn pop(&mut self) -> Box<Node> {
         if self.nodes.is_empty() {
-            self.nodes.resize(self.size, Box::new(Node::new()));
+            self.grow();
         }
         self.nodes.pop().unwrap()
     }
 
     pub fn push(&mut self, mut ptr: Box<Node>) {
-        ptr.children.drain(..).map(|n| self.push(n));
+        ptr.children.drain(..).for_each(|n| self.push(n));
         ptr.reinit();
         self.nodes.push(ptr);
     }
