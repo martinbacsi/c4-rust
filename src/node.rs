@@ -45,27 +45,23 @@ impl Node {
             let mut best_val = f64::NEG_INFINITY;
             let mut best = 0;
             self.terminal = true;
+            self.value = -1.;
             for cid in 0..self.children.len() {
                 let c = &self.children[cid];
-                if c.terminal {
-                    let v = -c.value;
-                    if v > self.value {
-                        self.value = v;
-                    }
-                    if c.value == 1.0 {
-                        self.terminal = true;
-                        self.value = -1.0;
-                        break;
-                    }
+                self.value = f32::max(self.value, c.value);
+                if c.terminal && c.value == 1.0 {
+                    self.terminal = true;
+                    break;
                 } else {
                     self.terminal = false;
-                    let val = c.ucb(mult);
-                    if val > best_val {
-                        best_val = val;
-                        best = cid;
-                    }
+                }
+                let val = c.ucb(mult);
+                if val > best_val {
+                    best_val = val;
+                    best = cid;
                 }
             }
+            self.value = -self.value;
             best
         }
     }

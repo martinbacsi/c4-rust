@@ -1,37 +1,35 @@
 mod connect4;
+mod mcts;
 mod nn;
 mod node;
-mod mcts;
 mod pool;
 mod random;
-use nn::NNManager;
-use node::Node;
-use connect4::Connect4;
-use connect4::Outcome;
-use std::time::{Instant, Duration};
-use mcts::MCTS;
-use pool::Pool;
 use crate::nn::NN;
 use crate::random::dirichlet_noise;
-
+use connect4::Connect4;
+use connect4::Outcome;
+use mcts::MCTS;
+use nn::NNManager;
+use node::Node;
+use pool::Pool;
+use std::time::{Duration, Instant};
 
 struct config {
     selfplay: bool,
-    iters: usize
+    iters: usize,
 }
 
 #[cfg(target_os = "linux")]
 const conf: config = config {
     selfplay: false,
-    iters: usize::MAX
+    iters: usize::MAX,
 };
 
 #[cfg(target_os = "windows")]
 const conf: config = config {
     selfplay: true,
-    iters: 2000
+    iters: 2000,
 };
-
 
 const W: usize = 9;
 const H: usize = 7;
@@ -41,9 +39,11 @@ const INPUT_SIZE: usize = H * W * 2;
 
 const cpuct: f64 = 4.0;
 
-
 fn main() {
     let mut mcts = MCTS::new();
+    #[cfg(target_os = "windows")]
     mcts.play_against();
+    #[cfg(target_os = "linux")]
+    mcts.cg();
     println!("Hello, world!");
 }
