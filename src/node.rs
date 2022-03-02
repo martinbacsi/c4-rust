@@ -1,3 +1,4 @@
+use crate::connect4::HEIGHT;
 use crate::cpuct;
 use crate::Connect4;
 use crate::NNManager;
@@ -14,6 +15,7 @@ pub struct Node {
     P: f32,
     pub children: Vec<Box<Node>>,
     pub game: Connect4,
+    expanded: bool,
 }
 
 impl Node {
@@ -26,6 +28,7 @@ impl Node {
             P: 0.,
             children: Vec::new(),
             game: Connect4::new(),
+            expanded: false,
         }
     }
 
@@ -37,10 +40,23 @@ impl Node {
         ((self.P as f64) * mult + self.Q) / ((1 + self.visits) as f64)
     }
 
-    fn select(&mut self) -> usize {
+    fn select(&mut self, NN: &mut NNManager, pool: &mut Pool) -> usize {
         if self.terminal {
             0 as usize
         } else {
+            if self.children.is_empty() {
+                let nnval = NN.get(&self.game);
+                (0..POLICY_SIZE).for_each(|a| {
+                    if self.game.height[a] < HEIGHT as u8 {
+                        let mut n = pool.pop();
+                        n.P = nnval.p[a];
+                        n.game = self.game;
+                        n.game.step(a as u8);
+                        self.children.push(n);
+                    };
+                });
+            }
+
             let mult = cpuct * (self.visits as f64).sqrt();
             let mut best_val = f64::NEG_INFINITY;
             let mut best = 0;
@@ -66,15 +82,10 @@ impl Node {
         }
     }
 
-    fn expand(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
+    fn expand(&mut self, NN: &mut NNManager) -> f32 {
         let nnval = NN.get(&self.game);
-        self.game.on_valid_action(&mut |a| {
-            let mut n = pool.pop();
-            n.P = nnval.p[a as usize];
-            n.game = self.game;
-            n.game.step(a);
-            self.children.push(n);
-        });
+
+        self.expanded = true;
         nnval.v
     }
 
@@ -121,10 +132,10 @@ impl Node {
         }
         let val;
 
-        if self.children.is_empty() {
-            val = self.expand(NN, pool);
+        if !self.expanded {
+            val = self.expand(NN);
         } else {
-            let cid = self.select();
+            let cid = self.select(NN, pool);
             if self.terminal {
                 val = self.value;
             } else {

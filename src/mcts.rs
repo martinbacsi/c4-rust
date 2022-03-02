@@ -35,18 +35,21 @@ impl MCTS {
             },
         };
         mcts.nn.nn.read_weights();
+        for i in 0..2 {
+            mcts.root.playout(&mut mcts.nn, &mut mcts.pool);
+        }
         mcts
     }
 
     fn update_with_action(&mut self, action: u8) {
         let mut new_root = Option::None;
-        self.root.children.drain(..).for_each(|c: Box<Node>| {
-            if c.as_ref().game.last_move == action {
-                new_root = Some(c);
+        while self.root.children.len() > 0 {
+            if self.root.children.last().unwrap().game.last_move == action {
+                new_root = Some(self.root.children.pop().unwrap());
             } else {
-                self.pool.push(c);
+                self.pool.push(self.root.children.pop().unwrap());
             }
-        });
+        }
         mem::swap(new_root.as_mut().unwrap(), &mut self.root);
         self.pool.push(new_root.unwrap());
     }
@@ -81,6 +84,7 @@ impl MCTS {
                 a = c;
             }
         });
+        eprintln!("root visits{}", self.root.visits);
         (a.game.last_move, p)
     }
 
@@ -92,7 +96,6 @@ impl MCTS {
     }
 
     pub fn play_against(&mut self) {
-        self.root.playout(&mut self.nn, &mut self.pool);
         for i in 0..64 {
             if i % 2 == 0 {
                 self.root.game.print();
@@ -132,16 +135,19 @@ impl MCTS {
     }
 
     pub fn cg(&mut self) {
-        let mut endt = Instant::now() + Duration::from_millis(900);
+        let mut endt;
         let mut input_line = String::new();
         io::stdin().read_line(&mut input_line).unwrap();
-        self.root.playout(&mut self.nn, &mut self.pool);
         for i in 0..64 {
-            if i > 0 {
-                endt = Instant::now() + Duration::from_millis(100);
-            }
             for _i in 0..10 + self.root.children.len() as usize {
+                input_line.clear();
                 io::stdin().read_line(&mut input_line).unwrap();
+            }
+
+            if i > 0 {
+                endt = Instant::now() + Duration::from_millis(90);
+            } else {
+                endt = Instant::now() + Duration::from_millis(900);
             }
             let opp_previous_action = parse_input!(input_line, i32); // opponent's previous chosen column index (will be -1 for first player in the first turn)
 

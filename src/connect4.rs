@@ -1,4 +1,3 @@
-
 /*
 +----------------------------+
 | 6 13 20 27 34 41 48 55 62 |
@@ -16,7 +15,7 @@ use std::collections::hash_map::DefaultHasher;
 use std::hash::Hasher;
 
 const WIDTH: usize = 9;
-const HEIGHT: usize = 7;
+pub const HEIGHT: usize = 7;
 
 const FAB_COL: u64 = 0b1111111;
 const FAB_ROW: u64 = (1 << (7 * 0))
@@ -70,17 +69,17 @@ const fn won(bb: u64) -> bool {
 pub enum Outcome {
     Win,
     Draw,
-    None
+    None,
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Connect4 {
     pub my_bb: u64,
     pub op_bb: u64,
-    height: [u8; WIDTH],
-    player: u8,
+    pub height: [u8; WIDTH],
+    pub player: u8,
     pub outcome: Outcome,
-    pub last_move: u8
+    pub last_move: u8,
 }
 
 impl Connect4 {
@@ -91,11 +90,6 @@ impl Connect4 {
         hasher.finish() as usize
     }
 
-    pub fn on_valid_action<T>(&self, func: &mut T)    
-    where T: FnMut(u8) {
-        (0..WIDTH).for_each(| i| {if self.height[i] < HEIGHT as u8  {func(i as u8)};});
-    }
-
     pub fn new() -> Self {
         Self {
             my_bb: 0,
@@ -103,18 +97,16 @@ impl Connect4 {
             height: [0; WIDTH],
             player: 0,
             outcome: Outcome::None,
-            last_move: u8::max_value()
+            last_move: u8::max_value(),
         }
     }
-    
-    fn full (self) -> bool {
-        self.turn() == (WIDTH * HEIGHT) as i32      
+
+    fn full(self) -> bool {
+        self.turn() == (WIDTH * HEIGHT) as i32
     }
 
     pub fn turn(self) -> i32 {
-        unsafe {
-            _popcnt64((self.my_bb | self.op_bb) as i64)
-        }
+        unsafe { _popcnt64((self.my_bb | self.op_bb) as i64) }
     }
 
     pub fn step(&mut self, action: u8) {
@@ -127,33 +119,8 @@ impl Connect4 {
             self.outcome = Outcome::Win;
         } else if self.full() {
             self.outcome = Outcome::Draw;
-        } 
+        }
     }
-
-    /*const DIMS: &'static [i64] = &[1, 1, HEIGHT as i64, WIDTH as i64];
-    type Features = [[[f32; WIDTH]; HEIGHT]; 1];
-    fn features(&self) -> Self::Features {
-        let mut s = Self::Features::default();
-        for row in 0..HEIGHT {
-            for col in 0..WIDTH {
-                let index = 1 << (row + HEIGHT * col);
-                if self.my_bb & index != 0 {
-                    s[0][row][col] = 1.0;
-                } else if self.op_bb & index != 0 {
-                    s[0][row][col] = -1.0;
-                } else {
-                    s[0][row][col] = -0.1;
-                }
-            }
-        }
-        for col in 0..WIDTH {
-            let h = self.height[col] as usize;
-            if h < HEIGHT {
-                s[0][h][col] = 0.1;
-            }
-        }
-        s
-    }*/
 
     pub fn print(&self) {
         for row in (0..HEIGHT).rev() {
@@ -175,209 +142,3 @@ impl Connect4 {
         println!("0 1 2 3 4 5 6 7 8");
     }
 }
-
-/*#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_first_wins() {
-        let mut game = Connect4::new();
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(game.step(&Column(0)));
-        assert!(game.is_over());
-        assert_eq!(game.winner(), Some(PlayerId::Red));
-        assert_eq!(game.reward(game.player()), -1.0);
-        assert_eq!(game.player(), PlayerId::Black);
-        assert_eq!(game.reward(PlayerId::Black), -1.0);
-        assert_eq!(game.reward(PlayerId::Red), 1.0);
-    }
-
-    #[test]
-    fn test_second_wins() {
-        let mut game = Connect4::new();
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(2)));
-        assert!(game.step(&Column(1)));
-        assert!(game.is_over());
-        assert_eq!(game.winner(), Some(PlayerId::Black));
-        assert_eq!(game.reward(game.player()), -1.0);
-        assert_eq!(game.player(), PlayerId::Red);
-        assert_eq!(game.reward(PlayerId::Black), 1.0);
-        assert_eq!(game.reward(PlayerId::Red), -1.0);
-    }
-
-    #[test]
-    fn test_draw() {
-        /*
-        +-------------------+
-        | r b r b r b r b r |
-        | r b r b r b r b b |
-        | r b r b r b r b r |
-        | b r b r b r b r b |
-        | b r b r b r b r r |
-        | r b r b r b r b b |
-        | r b r b r b r b r |
-        +-------------------+
-        */
-
-        let mut game = Connect4::new();
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-        assert!(!game.step(&Column(0)));
-        assert!(!game.step(&Column(1)));
-
-        assert!(game.iter_actions().position(|c| c == Column(0)).is_some());
-        assert!(!game.step(&Column(0)));
-        assert!(game.iter_actions().position(|c| c == Column(0)).is_none());
-
-        assert!(game.iter_actions().position(|c| c == Column(1)).is_some());
-        assert!(!game.step(&Column(1)));
-        assert!(game.iter_actions().position(|c| c == Column(1)).is_none());
-
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(3)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(3)));
-        assert!(!game.step(&Column(3)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(3)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(3)));
-        assert!(!game.step(&Column(2)));
-        assert!(!game.step(&Column(3)));
-
-        assert!(game.iter_actions().position(|c| c == Column(2)).is_some());
-        assert!(!game.step(&Column(2)));
-        assert!(game.iter_actions().position(|c| c == Column(2)).is_none());
-
-        assert!(game.iter_actions().position(|c| c == Column(3)).is_some());
-        assert!(!game.step(&Column(3)));
-        assert!(game.iter_actions().position(|c| c == Column(3)).is_none());
-
-        assert!(!game.step(&Column(4)));
-        assert!(!game.step(&Column(5)));
-        assert!(!game.step(&Column(4)));
-        assert!(!game.step(&Column(5)));
-        assert!(!game.step(&Column(5)));
-        assert!(!game.step(&Column(4)));
-        assert!(!game.step(&Column(5)));
-        assert!(!game.step(&Column(4)));
-        assert!(!game.step(&Column(4)));
-        assert!(!game.step(&Column(5)));
-        assert!(!game.step(&Column(4)));
-        assert!(!game.step(&Column(5)));
-
-        assert!(game.iter_actions().position(|c| c == Column(4)).is_some());
-        assert!(!game.step(&Column(4)));
-        assert!(game.iter_actions().position(|c| c == Column(4)).is_none());
-
-        assert!(game.iter_actions().position(|c| c == Column(5)).is_some());
-        assert!(!game.step(&Column(5)));
-        assert!(game.iter_actions().position(|c| c == Column(5)).is_none());
-
-        assert!(!game.step(&Column(6)));
-        assert!(!game.step(&Column(7)));
-        assert!(!game.step(&Column(6)));
-        assert!(!game.step(&Column(7)));
-        assert!(!game.step(&Column(7)));
-        assert!(!game.step(&Column(6)));
-        assert!(!game.step(&Column(7)));
-        assert!(!game.step(&Column(6)));
-        assert!(!game.step(&Column(6)));
-        assert!(!game.step(&Column(7)));
-        assert!(!game.step(&Column(6)));
-        assert!(!game.step(&Column(7)));
-
-        assert!(game.iter_actions().position(|c| c == Column(6)).is_some());
-        assert!(!game.step(&Column(6)));
-        assert!(game.iter_actions().position(|c| c == Column(6)).is_none());
-
-        assert!(game.iter_actions().position(|c| c == Column(7)).is_some());
-        assert!(!game.step(&Column(7)));
-        assert!(game.iter_actions().position(|c| c == Column(7)).is_none());
-
-        assert!(!game.step(&Column(8)));
-        assert!(!game.step(&Column(8)));
-        assert!(!game.step(&Column(8)));
-        assert!(!game.step(&Column(8)));
-        assert!(!game.step(&Column(8)));
-        assert!(!game.step(&Column(8)));
-        assert!(game.iter_actions().position(|c| c == Column(8)).is_some());
-        assert!(game.step(&Column(8)));
-        assert!(game.is_over());
-        assert_eq!(game.winner(), None);
-        assert_eq!(game.reward(PlayerId::Red), 0.0);
-        assert_eq!(game.reward(PlayerId::Black), 0.0);
-    }
-
-    #[test]
-    fn test_horz_wins() {
-        for row in 0..HEIGHT {
-            let mut bb =
-                (1 << (row + 0)) | (1 << (row + 7)) | (1 << (row + 14)) | (1 << (row + 21));
-            for _i in 0..6 {
-                assert!(won(bb));
-                bb <<= 7;
-            }
-        }
-    }
-
-    #[test]
-    fn test_vert_wins() {
-        for col in 0..WIDTH {
-            let mut bb = (1 << (7 * col + 0))
-                | (1 << (7 * col + 1))
-                | (1 << (7 * col + 2))
-                | (1 << (7 * col + 3));
-            for _i in 0..4 {
-                assert!(won(bb));
-                bb <<= 1;
-            }
-        }
-    }
-
-    #[test]
-    fn test_d1_wins() {
-        for row in 3..HEIGHT {
-            let mut bb = (1 << row) | (1 << (row + 6)) | (1 << (row + 12)) | (1 << (row + 18));
-            for _i in 0..6 {
-                assert!(won(bb));
-                bb <<= 7;
-            }
-        }
-    }
-
-    #[test]
-    fn test_d2_wins() {
-        for col in 0..6 {
-            let mut bb = (1 << (7 * col + 0))
-                | (1 << (7 * (col + 1) + 1))
-                | (1 << (7 * (col + 2) + 2))
-                | (1 << (7 * (col + 3) + 3));
-            for _i in 0..4 {
-                assert!(won(bb));
-                bb <<= 1;
-            }
-        }
-    }
-}*/
