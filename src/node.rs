@@ -8,14 +8,15 @@ use crate::POLICY_SIZE;
 
 #[derive(Clone)]
 pub struct Node {
-    terminal: bool,
+    pub terminal: bool,
     pub visits: i32,
-    value: f32,
+    pub value: f32,
     Q: f64,
     P: f32,
     pub children: Vec<Box<Node>>,
     pub game: Connect4,
     expanded: bool,
+    live_child: u16,
 }
 
 impl Node {
@@ -29,6 +30,7 @@ impl Node {
             children: Vec::new(),
             game: Connect4::new(),
             expanded: false,
+            live_child: 0,
         }
     }
 
@@ -48,6 +50,7 @@ impl Node {
                 let nnval = NN.get(&self.game);
                 (0..POLICY_SIZE).for_each(|a| {
                     if self.game.height[a] < HEIGHT as u8 {
+                        self.live_child |= (1 << a);
                         let mut n = pool.pop();
                         n.P = nnval.p[a];
                         n.game = self.game;
@@ -60,24 +63,14 @@ impl Node {
             let mult = cpuct * (self.visits as f64).sqrt();
             let mut best_val = f64::NEG_INFINITY;
             let mut best = 0;
-            self.terminal = true;
-            self.value = -1.;
             for cid in 0..self.children.len() {
                 let c = &self.children[cid];
-                self.value = f32::max(self.value, c.value);
-                if c.terminal && c.value == 1.0 {
-                    self.terminal = true;
-                    break;
-                } else {
-                    self.terminal = false;
-                }
                 let val = c.ucb(mult);
                 if val > best_val {
                     best_val = val;
                     best = cid;
                 }
             }
-            self.value = -self.value;
             best
         }
     }
@@ -139,7 +132,24 @@ impl Node {
             if self.terminal {
                 val = self.value;
             } else {
-                val = -self.children[cid].playout(NN, pool);
+                let c = &mut self.children[cid];
+                val = -c.playout(NN, pool);
+                if c.terminal {
+                    if c.value == 1.0 {
+                        self.value = 1.;
+
+                        self.live_child = 0;
+                    } else {
+                        self.live_child ^= (1 << c.game.last_move);
+                        if self.value < c.value {
+                            self.value = c.value;
+                        }
+                    }
+                    if self.live_child == 0 {
+                        self.terminal = true;
+                        self.value = -self.value;
+                    }
+                }
             }
         }
         self.update(val);
