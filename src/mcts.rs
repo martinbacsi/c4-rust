@@ -137,12 +137,33 @@ impl MCTS {
     pub fn cg(&mut self) {
         let mut endt;
         let mut input_line = String::new();
+        let mut input_line = String::new();
         io::stdin().read_line(&mut input_line).unwrap();
-        for i in 0..64 {
-            for _i in 0..10 + self.root.children.len() as usize {
-                input_line.clear();
+        let inputs = input_line.split(" ").collect::<Vec<_>>();
+        let my_id = parse_input!(inputs[0], i32); // 0 or 1 (Player 0 plays first)
+        let opp_id = parse_input!(inputs[1], i32); // if your index is 0, this will be 1, and vice versa
+
+        // game loop
+        for i in 0..65 {
+            let mut input_line = String::new();
+            io::stdin().read_line(&mut input_line).unwrap();
+            let turn_index = parse_input!(input_line, i32); // starts from 0; As the game progresses, first player gets [0,2,4,...] and second player gets [1,3,5,...]
+            for i in 0..7 as usize {
+                let mut input_line = String::new();
                 io::stdin().read_line(&mut input_line).unwrap();
+                let board_row = input_line.trim().to_string(); // one row of the board (from top to bottom)
             }
+            let mut input_line = String::new();
+            io::stdin().read_line(&mut input_line).unwrap();
+            let num_valid_actions = parse_input!(input_line, i32); // number of unfilled columns in the board
+            for i in 0..num_valid_actions as usize {
+                let mut input_line = String::new();
+                io::stdin().read_line(&mut input_line).unwrap();
+                let action = parse_input!(input_line, i32); // a valid column index into which a chip can be dropped
+            }
+            let mut input_line = String::new();
+            io::stdin().read_line(&mut input_line).unwrap();
+            let opp_previous_action = parse_input!(input_line, i32); //
 
             if i > 0 {
                 endt = Instant::now() + Duration::from_millis(90);
@@ -154,10 +175,10 @@ impl MCTS {
             if opp_previous_action >= 0 {
                 self.update_with_action(opp_previous_action as u8);
             }
-
+            let rv = self.root.value;
             let (a, _p) = self.get_move_probs_play(endt);
             self.update_with_action(a);
-            println!("{}", a);
+            println!("{} {}", a, rv);
         }
     }
 }

@@ -35,49 +35,52 @@ impl Node {
     }
 
     pub fn reinit(&mut self) {
-        *self = Node::new();
+        self.terminal = false;
+        self.visits = 0;
+        self.value = -1.;
+        self.Q = 0.;
+        self.P = 0.;
+        self.children.clear();
+        self.game = Connect4::new();
+        self.expanded = false;
+        self.live_child = 0;
     }
 
     fn ucb(&self, mult: f64) -> f64 {
         ((self.P as f64) * mult + self.Q) / ((1 + self.visits) as f64)
     }
 
-    fn select(&mut self, NN: &mut NNManager, pool: &mut Pool) -> usize {
-        if self.terminal {
-            0 as usize
-        } else {
-            if self.children.is_empty() {
-                let nnval = NN.get(&self.game);
-                (0..POLICY_SIZE).for_each(|a| {
-                    if self.game.height[a] < HEIGHT as u8 {
-                        self.live_child |= (1 << a);
-                        let mut n = pool.pop();
-                        n.P = nnval.p[a];
-                        n.game = self.game;
-                        n.game.step(a as u8);
-                        self.children.push(n);
-                    };
-                });
-            }
-
-            let mult = cpuct * (self.visits as f64).sqrt();
-            let mut best_val = f64::NEG_INFINITY;
-            let mut best = 0;
-            for cid in 0..self.children.len() {
-                let c = &self.children[cid];
-                let val = c.ucb(mult);
-                if val > best_val {
-                    best_val = val;
-                    best = cid;
-                }
-            }
-            best
+    pub fn select(&mut self, NN: &mut NNManager, pool: &mut Pool) -> usize {
+        if self.children.is_empty() {
+            let nnval = NN.get(&self.game);
+            (0..POLICY_SIZE).for_each(|a| {
+                if self.game.height[a] < HEIGHT as u8 {
+                    self.live_child |= (1 << a);
+                    let mut n = pool.pop();
+                    n.P = nnval.p[a];
+                    n.game = self.game;
+                    n.game.step(a as u8);
+                    self.children.push(n);
+                };
+            });
         }
+
+        let mult = cpuct * (self.visits as f64).sqrt();
+        let mut best_val = f64::NEG_INFINITY;
+        let mut best = 0;
+        for cid in 0..self.children.len() {
+            let c = &self.children[cid];
+            let val = c.ucb(mult);
+            if val > best_val {
+                best_val = val;
+                best = cid;
+            }
+        }
+        best
     }
 
     fn expand(&mut self, NN: &mut NNManager) -> f32 {
         let nnval = NN.get(&self.game);
-
         self.expanded = true;
         nnval.v
     }
