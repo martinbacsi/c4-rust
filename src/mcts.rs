@@ -27,7 +27,7 @@ pub struct MCTS {
 impl MCTS {
     pub fn new() -> MCTS {
         let mut mcts = MCTS {
-            pool: Pool::new(1000000),
+            pool: Pool::new(2000000),
             root: Box::new(Node::new()),
             nn: NNManager {
                 cache: HashMap::new(),
@@ -163,22 +163,25 @@ impl MCTS {
             }
             let mut input_line = String::new();
             io::stdin().read_line(&mut input_line).unwrap();
-            let opp_previous_action = parse_input!(input_line, i32); //
-
             if i > 0 {
-                endt = Instant::now() + Duration::from_millis(90);
+                endt = Instant::now() + Duration::from_millis(85);
             } else {
-                endt = Instant::now() + Duration::from_millis(900);
+                endt = Instant::now() + Duration::from_millis(700);
             }
-            let opp_previous_action = parse_input!(input_line, i32); // opponent's previous chosen column index (will be -1 for first player in the first turn)
 
-            if opp_previous_action >= 0 {
-                self.update_with_action(opp_previous_action as u8);
+            if input_line != "STEAL" {
+                let opp_action = parse_input!(input_line, i32);
+                if opp_action >= 0 {
+                    self.update_with_action(opp_action as u8);
+                }
             }
-            let rv = self.root.value;
             let (a, _p) = self.get_move_probs_play(endt);
             self.update_with_action(a);
-            println!("{} {}", a, rv);
+            if self.root.terminal {
+                println!("{} {}", a, self.root.value);
+            } else {
+                println!("{} {}", a, self.root.Q / self.root.visits as f64);
+            }
         }
     }
 }

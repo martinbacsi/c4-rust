@@ -11,7 +11,7 @@ pub struct Node {
     pub terminal: bool,
     pub visits: i32,
     pub value: f32,
-    Q: f64,
+    pub Q: f64,
     P: f32,
     pub children: Vec<Box<Node>>,
     pub game: Connect4,
@@ -140,7 +140,6 @@ impl Node {
                 if c.terminal {
                     if c.value == 1.0 {
                         self.value = 1.;
-
                         self.live_child = 0;
                     } else {
                         self.live_child ^= (1 << c.game.last_move);
