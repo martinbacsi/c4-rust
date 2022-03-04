@@ -76,19 +76,25 @@ impl MCTS {
         (a, p)
     }
 
-    fn get_move_probs_play(&mut self, endt: Instant) -> (u8, [f64; POLICY_SIZE]) {
+    fn get_move_probs_play(&mut self, endt: Instant) -> u8 {
         while Instant::now() < endt {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
-        let p = self.root.prob_vector();
+
         let mut a = &self.root.children[0];
         self.root.children.iter().for_each(|c| {
-            if p[c.game.last_move as usize] > p[a.game.last_move as usize] {
-                a = c;
+            if self.root.terminal {
+                if c.value > a.value {
+                    a = c;
+                }
+            } else {
+                if c.visits > a.visits {
+                    a = c;
+                }
             }
         });
-        eprintln!("root visits{}", self.root.visits);
-        (a.game.last_move, p)
+        eprintln!("root visits: {}", self.root.visits);
+        a.game.last_move
     }
 
     pub fn self_play(&mut self) {
@@ -122,7 +128,7 @@ impl MCTS {
                     println!("hülye vagy");
                 }
             } else {
-                let (a, _) = self.get_move_probs_play(Instant::now() + Duration::from_millis(1000));
+                let a = self.get_move_probs_play(Instant::now() + Duration::from_millis(1000));
                 self.update_with_action(a);
             }
             if self.root.game.outcome != Outcome::None {
@@ -140,37 +146,30 @@ impl MCTS {
     pub fn cg(&mut self) {
         let mut endt;
         let mut input_line = String::new();
-        let mut input_line = String::new();
         io::stdin().read_line(&mut input_line).unwrap();
-        let inputs = input_line.split(" ").collect::<Vec<_>>();
-        let my_id = parse_input!(inputs[0], i32); // 0 or 1 (Player 0 plays first)
-        let opp_id = parse_input!(inputs[1], i32); // if your index is 0, this will be 1, and vice versa
-
-        // game loop
+        let mut my_last: i32 = -1;
         for i in 0..65 {
-            let mut input_line = String::new();
             io::stdin().read_line(&mut input_line).unwrap();
-            let turn_index = parse_input!(input_line, i32); // starts from 0; As the game progresses, first player gets [0,2,4,...] and second player gets [1,3,5,...]
-            for i in 0..7 as usize {
-                let mut input_line = String::new();
+            for _ in 0..7 as usize {
                 io::stdin().read_line(&mut input_line).unwrap();
-                let board_row = input_line.trim().to_string(); // one row of the board (from top to bottom)
             }
-            let mut input_line = String::new();
+            input_line.clear();
             io::stdin().read_line(&mut input_line).unwrap();
-            let num_valid_actions = parse_input!(input_line, i32); // number of unfilled columns in the board
+            let num_valid_actions = parse_input!(input_line, i32);
             for i in 0..num_valid_actions as usize {
-                let mut input_line = String::new();
                 io::stdin().read_line(&mut input_line).unwrap();
-                let action = parse_input!(input_line, i32); // a valid column index into which a chip can be dropped
             }
-            let mut input_line = String::new();
+            input_line.clear();
             io::stdin().read_line(&mut input_line).unwrap();
-            if i > 0 {
-                endt = Instant::now() + Duration::from_millis(85);
+            if i == 0 {
+                endt = Instant::now() + Duration::from_millis(900);
             } else {
-                endt = Instant::now() + Duration::from_millis(700);
+                endt = Instant::now() + Duration::from_millis(100);
             }
+            if my_last != -1 {
+                self.update_with_action(my_last as u8);
+            }
+
             let mut hard_coded: i32 = -1;
             if input_line != "STEAL" {
                 let opp_action = parse_input!(input_line, i32);
@@ -179,13 +178,24 @@ impl MCTS {
                 }
                 if opp_action == -1 {
                     hard_coded = 1;
+                    self.update_with_action(hard_coded as u8);
+                    my_last = -1;
+                } else if i == 0 {
+                    hard_coded = -2;
                 }
             }
-            let (mut a, _p) = self.get_move_probs_play(endt);
-            if hard_coded != -1 {
+            let mut a = self.get_move_probs_play(endt);
+            if hard_coded >= 0 {
                 a = (hard_coded as u8);
+            } else {
+                if hard_coded == -2 {
+                    my_last = -1;
+                    println!("STEAL");
+                    continue;
+                }
+                my_last = a as i32;
             }
-            self.update_with_action(a);
+
             self.root.game.print();
             if self.root.terminal {
                 println!("{} {}", a, self.root.value);
