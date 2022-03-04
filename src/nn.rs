@@ -41,7 +41,7 @@ impl DenseLayer {
                 maps[i] ^= 1 << r;
                 let nn_ind = r as usize * 2 + i;
                 for j in 0..out_size {
-                    output[i] += 1. * self.weights[j + out_size * nn_ind];
+                    output[j] = output[j] + self.weights[j + out_size * nn_ind];
                 }
             }
         }
@@ -98,8 +98,19 @@ impl NN {
             } else {
                 a.last().unwrap().forward(&mut b[0].input);
             }
+
             relu(&mut b[0].input);
         }
+
+        //if game.my_bb != 0 || game.op_bb != 0 {
+        //for i in 0..128 {
+        //eprint!("{} ", self.path[1].input[72]);
+        //}
+        //for a in output.iter() {
+        //eprint!("{}", b[0].input[0]);
+        //}
+        //    eprintln!("");
+        //}
 
         self.path.last().unwrap().forward(&mut res_raw);
 
