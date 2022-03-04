@@ -10,7 +10,7 @@ use crate::POLICY_SIZE;
 pub struct Node {
     pub terminal: bool,
     pub visits: i32,
-    pub value: f32,
+    pub value: i8,
     pub Q: f64,
     P: f32,
     pub children: Vec<Box<Node>>,
@@ -24,7 +24,7 @@ impl Node {
         Node {
             terminal: false,
             visits: 0,
-            value: -1.,
+            value: -1,
             Q: 0.,
             P: 0.,
             children: Vec::new(),
@@ -37,7 +37,7 @@ impl Node {
     pub fn reinit(&mut self) {
         self.terminal = false;
         self.visits = 0;
-        self.value = -1.;
+        self.value = -1;
         self.Q = 0.;
         self.P = 0.;
         self.children.clear();
@@ -93,13 +93,10 @@ impl Node {
     pub fn prob_vector(&self) -> [f64; POLICY_SIZE] {
         let mut probs: [f64; POLICY_SIZE] = [0.0; POLICY_SIZE];
         if self.terminal {
-            let max = self
-                .children
-                .iter()
-                .fold(0.0, |max, c| if c.value > max { c.value } else { max });
+            let max = self.children.iter().max_by_key(|a| a.value).unwrap();
             let mut sum = 0.0;
             for c in self.children.iter() {
-                if c.value == max {
+                if c.value == max.value {
                     sum += 1.0;
                     probs[c.game.last_move as usize] = 1.0;
                 }
@@ -120,9 +117,9 @@ impl Node {
     pub fn playout(&mut self, NN: &mut NNManager, pool: &mut Pool) -> f32 {
         if self.game.outcome != Outcome::None {
             self.value = if self.game.outcome == Outcome::Win {
-                1.
+                1
             } else {
-                0.
+                0
             };
             self.terminal = true;
         }
@@ -133,19 +130,16 @@ impl Node {
         } else {
             let cid = self.select(NN, pool);
             if self.terminal {
-                val = self.value;
+                val = self.value as f32;
             } else {
                 let c = &mut self.children[cid];
                 val = -c.playout(NN, pool);
                 if c.terminal {
-                    if c.value == 1.0 {
-                        self.value = 1.;
+                    self.value = self.value.max(c.value);
+                    if c.value == 1 {
                         self.live_child = 0;
                     } else {
                         self.live_child ^= (1 << c.game.last_move);
-                        if self.value < c.value {
-                            self.value = c.value;
-                        }
                     }
                     if self.live_child == 0 {
                         self.terminal = true;

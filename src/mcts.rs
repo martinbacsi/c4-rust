@@ -1,8 +1,6 @@
 use crate::conf;
 use crate::connect4::Outcome;
 use crate::nn::NN;
-use crate::random::dirichlet_noise;
-use crate::random::rand_float;
 use crate::NNManager;
 use crate::Node;
 use crate::Pool;
@@ -62,16 +60,16 @@ impl MCTS {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
         let mut p = self.root.prob_vector();
-        dirichlet_noise(&mut p);
+        //dirichlet_noise(&mut p);
 
         let mut best = 0.0;
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
-            let d = p[c.game.last_move as usize] * rand_float();
-            if d > best {
-                best = d;
-                a = c.game.last_move;
-            }
+            //let d = p[c.game.last_move as usize] * rand_float();
+            //if d > best {
+            //    best = d;
+            //    a = c.game.last_move;
+            //}
         });
         (a, p)
     }
@@ -80,21 +78,15 @@ impl MCTS {
         while Instant::now() < endt {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
-
-        let mut a = &self.root.children[0];
-        self.root.children.iter().for_each(|c| {
+        let a = self.root.children.iter().max_by_key(|b| {
             if self.root.terminal {
-                if c.value > a.value {
-                    a = c;
-                }
+                b.value as i32
             } else {
-                if c.visits > a.visits {
-                    a = c;
-                }
+                b.visits
             }
         });
         eprintln!("root visits: {}", self.root.visits);
-        a.game.last_move
+        a.unwrap().game.last_move
     }
 
     pub fn self_play(&mut self) {
