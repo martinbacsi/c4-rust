@@ -42,6 +42,9 @@ impl MCTS {
     }
 
     fn update_with_action(&mut self, action: u8) {
+        if self.root.children.is_empty() {
+            self.root.select(&mut self.nn, &mut self.pool);
+        }
         let mut new_root = Option::None;
         while self.root.children.len() > 0 {
             if self.root.children.last().unwrap().game.last_move == action {
@@ -168,15 +171,22 @@ impl MCTS {
             } else {
                 endt = Instant::now() + Duration::from_millis(700);
             }
-
+            let mut hard_coded: i32 = -1;
             if input_line != "STEAL" {
                 let opp_action = parse_input!(input_line, i32);
                 if opp_action >= 0 {
                     self.update_with_action(opp_action as u8);
                 }
+                if opp_action == -1 {
+                    hard_coded = 1;
+                }
             }
-            let (a, _p) = self.get_move_probs_play(endt);
+            let (mut a, _p) = self.get_move_probs_play(endt);
+            if hard_coded != -1 {
+                a = (hard_coded as u8);
+            }
             self.update_with_action(a);
+            self.root.game.print();
             if self.root.terminal {
                 println!("{} {}", a, self.root.value);
             } else {

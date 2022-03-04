@@ -126,7 +126,7 @@ impl Connect4 {
         for row in (0..HEIGHT).rev() {
             for col in 0..WIDTH {
                 let index = 1 << (row + HEIGHT * col);
-                print!(
+                eprint!(
                     "{} ",
                     if self.my_bb & index != 0 {
                         "O"
@@ -137,8 +137,8 @@ impl Connect4 {
                     }
                 );
             }
-            println!();
+            eprintln!();
         }
-        println!("0 1 2 3 4 5 6 7 8");
+        eprintln!("0 1 2 3 4 5 6 7 8");
     }
 }
