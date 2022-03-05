@@ -34,17 +34,11 @@ impl DenseLayer {
     fn forward_game(&self, game: &Connect4, output: &mut Vec<f32>) {
         output.copy_from_slice(&self.bias);
         let out_size = output.len();
-        let mut maps = [game.my_bb, game.op_bb];
-        for i in 0..2 {
-            while maps[i] != 0 {
-                let r = maps[i].trailing_zeros();
-                maps[i] ^= 1 << r;
-                let nn_ind = r as usize * 2 + i;
-                for j in 0..out_size {
-                    output[j] = output[j] + self.weights[j + out_size * nn_ind];
-                }
+        game.on_set_indices(|nn_ind| {
+            for j in 0..out_size {
+                output[j] = output[j] + self.weights[j + out_size * nn_ind];
             }
-        }
+        });
     }
 
     pub fn new(input_size: usize) -> DenseLayer {
@@ -101,16 +95,6 @@ impl NN {
 
             relu(&mut b[0].input);
         }
-
-        //if game.my_bb != 0 || game.op_bb != 0 {
-        //for i in 0..128 {
-        //eprint!("{} ", self.path[1].input[72]);
-        //}
-        //for a in output.iter() {
-        //eprint!("{}", b[0].input[0]);
-        //}
-        //    eprintln!("");
-        //}
 
         self.path.last().unwrap().forward(&mut res_raw);
 

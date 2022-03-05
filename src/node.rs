@@ -90,8 +90,8 @@ impl Node {
         self.Q += value as f64;
     }
 
-    pub fn prob_vector(&self) -> [f64; POLICY_SIZE] {
-        let mut probs: [f64; POLICY_SIZE] = [0.0; POLICY_SIZE];
+    pub fn prob_vector(&self) -> [f32; POLICY_SIZE] {
+        let mut probs: [f32; POLICY_SIZE] = [0.0; POLICY_SIZE];
         if self.terminal {
             let max = self.children.iter().max_by_key(|a| a.value).unwrap();
             let mut sum = 0.0;
@@ -107,7 +107,7 @@ impl Node {
                 .iter()
                 .fold(0, |all_visits, x| all_visits + x.visits);
             (&self.children).into_iter().for_each(|n| {
-                probs[n.game.last_move as usize] = n.visits as f64 / all_visits as f64
+                probs[n.game.last_move as usize] = n.visits as f32 / all_visits as f32
             });
         }
 

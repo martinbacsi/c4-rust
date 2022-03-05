@@ -5,6 +5,8 @@ mod nn;
 mod nn_string;
 mod node;
 mod pool;
+mod random;
+mod sample;
 use crate::decode_base16k::decode_b16k;
 use crate::decode_base16k::encode_b16k;
 use crate::nn::NN;
@@ -14,6 +16,9 @@ use mcts::MCTS;
 use nn::NNManager;
 use node::Node;
 use pool::Pool;
+use sample::Sample;
+use sample::SampleStore;
+use std::collections::HashMap;
 use std::env;
 use std::env::args;
 use std::time::{Duration, Instant};
@@ -59,10 +64,19 @@ fn main() {
         output.write(st.as_bytes());
         output.write(b"\";");
     } else {
-        let mut mcts = MCTS::new();
         #[cfg(target_os = "windows")]
-        mcts.self_play();
+        {
+            let mut ss: SampleStore = SampleStore {
+                samples: HashMap::new(),
+            };
+            let mut mcts = MCTS::new();
+            for i in 0..1000 {
+                eprintln!("{}", i);
+                mcts.self_play(&mut ss);
+                mcts.clear();
+            }
+        }
         #[cfg(target_os = "linux")]
-        mcts.cg();
+        MCTS::new().cg();
     }
 }

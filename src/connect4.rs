@@ -122,6 +122,21 @@ impl Connect4 {
         }
     }
 
+    pub fn on_set_indices<T>(&self, mut func: T)
+    where
+        T: FnMut(usize),
+    {
+        let mut maps = [self.my_bb, self.op_bb];
+        for i in 0..2 {
+            while maps[i] != 0 {
+                let r = maps[i].trailing_zeros();
+                maps[i] ^= 1 << r;
+                let nn_ind = r as usize * 2 + i;
+                func(nn_ind);
+            }
+        }
+    }
+
     pub fn print(&self) {
         for row in (0..HEIGHT).rev() {
             for col in 0..WIDTH {

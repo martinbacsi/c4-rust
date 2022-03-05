@@ -1,12 +1,17 @@
 use crate::conf;
 use crate::connect4::Outcome;
 use crate::nn::NN;
+use crate::pool;
+use crate::random::dirichlet_noise;
+use crate::random::rand_float;
+use crate::sample::SampleStore;
 use crate::NNManager;
 use crate::Node;
 use crate::Pool;
 use crate::POLICY_SIZE;
 use std::fmt::Result;
 use std::io;
+use std::mem::swap;
 use std::num::ParseIntError;
 use std::time::Duration;
 use std::{collections::HashMap, mem, time::Instant};
@@ -39,6 +44,12 @@ impl MCTS {
         mcts
     }
 
+    pub fn clear(&mut self) {
+        let mut a = self.pool.pop();
+        swap(&mut a, &mut self.root);
+        self.pool.push(a);
+    }
+
     fn update_with_action(&mut self, action: u8) {
         if self.root.children.is_empty() {
             self.root.select(&mut self.nn, &mut self.pool);
@@ -55,21 +66,21 @@ impl MCTS {
         self.pool.push(new_root.unwrap());
     }
 
-    fn get_move_probs_selfplay(&mut self) -> (u8, [f64; POLICY_SIZE]) {
+    fn get_move_probs_selfplay(&mut self) -> (u8, [f32; POLICY_SIZE]) {
         for i in 0..conf.iters {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
         let mut p = self.root.prob_vector();
-        //dirichlet_noise(&mut p);
+        dirichlet_noise(&mut p);
 
         let mut best = 0.0;
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
-            //let d = p[c.game.last_move as usize] * rand_float();
-            //if d > best {
-            //    best = d;
-            //    a = c.game.last_move;
-            //}
+            let d = p[c.game.last_move as usize]; // * rand_float();
+            if d > best {
+                best = d;
+                a = c.game.last_move;
+            }
         });
         (a, p)
     }
@@ -89,7 +100,7 @@ impl MCTS {
         a.unwrap().game.last_move
     }
 
-    pub fn self_play(&mut self) {
+    pub fn self_play(&mut self, ss: &mut SampleStore) {
         while self.root.game.outcome == Outcome::None {
             let (a, p) = self.get_move_probs_selfplay();
             self.update_with_action(a);
