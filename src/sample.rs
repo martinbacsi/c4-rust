@@ -2,12 +2,13 @@ use std::collections::HashMap;
 
 use crate::{connect4::Connect4, node::Node, INPUT_SIZE, POLICY_SIZE};
 
+#[derive(Copy, Clone)]
 pub struct Sample {
-    input: [f32; INPUT_SIZE],
-    p: [f32; POLICY_SIZE],
-    v: f32,
-    visits: usize,
-    hash: usize,
+    pub input: [f32; INPUT_SIZE],
+    pub p: [f32; POLICY_SIZE],
+    pub v: f32,
+    pub visits: usize,
+    pub hash: usize,
 }
 
 impl Sample {

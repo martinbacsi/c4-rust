@@ -70,10 +70,21 @@ fn main() {
                 samples: HashMap::new(),
             };
             let mut mcts = MCTS::new();
-            for i in 0..1000 {
+            for i in 0..100 {
                 eprintln!("{}", i);
                 mcts.self_play(&mut ss);
                 mcts.clear();
+            }
+            let mut file = File::create("test").unwrap();
+            for (_, s) in &mut ss.samples {
+                s.v /= s.visits as f32;
+                for p in &mut s.p {
+                    *p /= s.visits as f32;
+                }
+                let s2 = s;
+                let bytes: [u8; ((INPUT_SIZE + POLICY_SIZE + 1) * 4) + 2 * 8] =
+                    unsafe { std::mem::transmute(*s2) };
+                file.write_all(&bytes.split_at(((INPUT_SIZE + POLICY_SIZE + 1) * 4)).0);
             }
         }
         #[cfg(target_os = "linux")]

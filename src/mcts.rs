@@ -4,6 +4,7 @@ use crate::nn::NN;
 use crate::pool;
 use crate::random::dirichlet_noise;
 use crate::random::rand_float;
+use crate::sample::Sample;
 use crate::sample::SampleStore;
 use crate::NNManager;
 use crate::Node;
@@ -76,7 +77,7 @@ impl MCTS {
         let mut best = 0.0;
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
-            let d = p[c.game.last_move as usize]; // * rand_float();
+            let d = p[c.game.last_move as usize] * rand_float();
             if d > best {
                 best = d;
                 a = c.game.last_move;
@@ -103,6 +104,7 @@ impl MCTS {
     pub fn self_play(&mut self, ss: &mut SampleStore) {
         while self.root.game.outcome == Outcome::None {
             let (a, p) = self.get_move_probs_selfplay();
+            ss.add_sample(Sample::new(&self.root));
             self.update_with_action(a);
         }
     }
