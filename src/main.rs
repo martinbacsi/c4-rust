@@ -75,16 +75,22 @@ fn main() {
                 mcts.self_play(&mut ss);
                 mcts.clear();
             }
-            let mut file = File::create("test").unwrap();
+            let mut file =
+                File::create(String::from("./traindata/") + &random::rand().to_string()).unwrap();
             for (_, s) in &mut ss.samples {
                 s.v /= s.visits as f32;
                 for p in &mut s.p {
                     *p /= s.visits as f32;
                 }
-                let s2 = s;
-                let bytes: [u8; ((INPUT_SIZE + POLICY_SIZE + 1) * 4) + 2 * 8] =
-                    unsafe { std::mem::transmute(*s2) };
-                file.write_all(&bytes.split_at(((INPUT_SIZE + POLICY_SIZE + 1) * 4)).0);
+                let a: [u8; INPUT_SIZE * 4] = unsafe { std::mem::transmute(s.input) };
+                file.write_all(&a);
+
+                let a: [u8; POLICY_SIZE * 4] = unsafe { std::mem::transmute(s.p) };
+                file.write_all(&a);
+
+                let a: [u8; 1 * 4] = unsafe { std::mem::transmute(s.v) };
+
+                file.write_all(&a);
             }
         }
         #[cfg(target_os = "linux")]

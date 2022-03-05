@@ -20,6 +20,7 @@ impl Sample {
             visits: 1,
             hash: node.game.hash(),
         };
+
         node.game.on_set_indices(|i| sample.input[i] = 1.);
         sample
     }
@@ -31,15 +32,19 @@ pub struct SampleStore {
 
 impl SampleStore {
     pub fn add_sample(&mut self, mut s: Sample) {
+        if s.v / s.visits as f32 > 1.0 {
+            panic!("XDD");
+        }
         if self.samples.contains_key(&s.hash) {
             let s2 = &self.samples[&s.hash];
-            s.visits += 1;
+            s.visits += s2.visits;
             s.input.clone_from_slice(&s2.input);
             for i in 0..POLICY_SIZE {
                 s.p[i] += s2.p[i];
             }
             s.v += s2.v;
         }
+
         self.samples.insert(s.hash, s);
     }
 }
