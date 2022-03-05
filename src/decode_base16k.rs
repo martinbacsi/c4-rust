@@ -3,7 +3,8 @@ use std::{
     io::{BufReader, Read, Write},
 };
 
-use crate::nn_string::{nn_len, nn_str};
+use crate::nn_len;
+use crate::nn_string::nn_str;
 
 pub fn encode_b16k(binary_file: &str) -> (usize, Vec<u16>) {
     let f = File::open(binary_file);
@@ -58,11 +59,6 @@ pub fn encode_b16k(binary_file: &str) -> (usize, Vec<u16>) {
         code += 0x5000;
         enc.push(code);
     }
-    let st = String::from_utf16(&enc).unwrap();
-
-    let path = "results.txt";
-    let mut output = File::create(path).unwrap();
-    output.write(st.as_bytes());
 
     (buffer.len(), enc)
 }

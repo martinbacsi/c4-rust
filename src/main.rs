@@ -14,8 +14,13 @@ use mcts::MCTS;
 use nn::NNManager;
 use node::Node;
 use pool::Pool;
+use std::env;
+use std::env::args;
 use std::time::{Duration, Instant};
-
+use std::{
+    fs::File,
+    io::{BufReader, Read, Write},
+};
 struct config {
     selfplay: bool,
     iters: usize,
@@ -39,12 +44,25 @@ const H: usize = 7;
 const POLICY_SIZE: usize = W;
 const INPUT_SIZE: usize = H * W * 2;
 
-const cpuct: f64 = 4.0;
+const cpuct: f64 = 3.0;
+
+pub const nn_len: usize = 100648;
 
 fn main() {
-    let mut mcts = MCTS::new();
-    #[cfg(target_os = "windows")]
-    mcts.play_against();
-    #[cfg(target_os = "linux")]
-    mcts.cg();
+    if args().find(|a| a == "--encode").is_some() {
+        let (s, enc) = encode_b16k("best.w32");
+        let st = String::from_utf16(&enc).unwrap();
+
+        let path = "nn_string.rs";
+        let mut output = File::create(path).unwrap();
+        output.write(b"pub const nn_str: &str = \"");
+        output.write(st.as_bytes());
+        output.write(b"\";");
+    } else {
+        let mut mcts = MCTS::new();
+        #[cfg(target_os = "windows")]
+        mcts.self_play();
+        #[cfg(target_os = "linux")]
+        mcts.cg();
+    }
 }

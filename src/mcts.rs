@@ -96,45 +96,6 @@ impl MCTS {
         }
     }
 
-    pub fn play_against(&mut self) {
-        for i in 0..64 {
-            if i % 2 == 0 {
-                self.root.game.print();
-                loop {
-                    let mut buffer = String::new();
-                    std::io::stdin().read_line(&mut buffer).expect("read error");
-                    let a_read = buffer.trim().parse::<u8>();
-                    if a_read.is_ok() {
-                        let a = a_read.unwrap();
-                        if self
-                            .root
-                            .children
-                            .iter()
-                            .find(|c| c.game.last_move == a)
-                            .is_some()
-                        {
-                            self.update_with_action(a);
-                            break;
-                        }
-                    }
-                    println!("hülye vagy");
-                }
-            } else {
-                let a = self.get_move_probs_play(Instant::now() + Duration::from_millis(1000));
-                self.update_with_action(a);
-            }
-            if self.root.game.outcome != Outcome::None {
-                self.root.game.print();
-                if i % 2 == 0 {
-                    println!("nice!");
-                } else {
-                    println!("LOL XDDDD");
-                }
-                break;
-            }
-        }
-    }
-
     pub fn cg(&mut self) {
         let mut endt;
         let mut input_line = String::new();
@@ -154,7 +115,7 @@ impl MCTS {
             input_line.clear();
             io::stdin().read_line(&mut input_line).unwrap();
             if i == 0 {
-                endt = Instant::now() + Duration::from_millis(900);
+                endt = Instant::now() + Duration::from_millis(1000);
             } else {
                 endt = Instant::now() + Duration::from_millis(100);
             }
