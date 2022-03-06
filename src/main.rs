@@ -90,12 +90,9 @@ fn main() {
                         }
                         let a: [u8; INPUT_SIZE * 4] = unsafe { std::mem::transmute(s.input) };
                         file.write_all(&a);
-
                         let a: [u8; POLICY_SIZE * 4] = unsafe { std::mem::transmute(s.p) };
                         file.write_all(&a);
-
                         let a: [u8; 1 * 4] = unsafe { std::mem::transmute(s.v) };
-
                         file.write_all(&a);
                     }
                 });
