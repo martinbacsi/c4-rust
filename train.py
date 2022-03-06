@@ -19,7 +19,7 @@ def save_model(model, fileSTR):
 POLICY_SIZE = W;
 INPUT_SIZE = H * W * 2;
 
-K_BATCH_SIZE=64
+K_BATCH_SIZE=256
 K_EPOCH=10  
 
 def dense(features, x):
@@ -64,14 +64,14 @@ def save_all(model, prefix):
     file_keras = prefix + postfix_keras
     save_model(model, prefix + postfix_32)
     model.save(file_keras)
-    subprocess.run("cargo run --release -- --encode", shell=True)
+    subprocess.run("cargo run -q --release -- --encode", shell=True)
    
 if True and os.path.exists(keras_model_file):
     model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
 
 save_all(model, MODEL_FILE)
 np.set_printoptions(suppress=True)
-model.optimizer.learning_rate.assign(0.0001)
+model.optimizer.learning_rate.assign(0.001)
 
 while True:   
     list_of_files = os.listdir('traindata')

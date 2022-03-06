@@ -41,7 +41,7 @@ const conf: config = config {
 #[cfg(target_os = "windows")]
 const conf: config = config {
     selfplay: true,
-    iters: 10000,
+    iters: 2000,
 };
 
 const W: usize = 9;
@@ -50,7 +50,7 @@ const H: usize = 7;
 const POLICY_SIZE: usize = W;
 const INPUT_SIZE: usize = H * W * 2;
 
-const cpuct: f64 = 3.0;
+const cpuct: f64 = 4.0;
 
 pub const nn_len: usize = 100648;
 

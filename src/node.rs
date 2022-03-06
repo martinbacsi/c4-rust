@@ -93,19 +93,27 @@ impl Node {
 
     pub fn prob_vector(&self) -> [f32; POLICY_SIZE] {
         let mut probs: [f32; POLICY_SIZE] = [0.0; POLICY_SIZE];
+        let mut sum = 0;
         if self.terminal {
-            let max = self.children.iter().max_by_key(|a| a.value).unwrap();
             for c in self.children.iter() {
-                if c.value == max.value {
+                if c.terminal && c.value == -self.value {
+                    sum += 1;
                     probs[c.game.last_move as usize] = 1.0;
                 }
             }
+            if sum == 0 {
+                panic!("ASD");
+            }
         } else {
-            (&self.children).into_iter().for_each(|n| {
-                probs[n.game.last_move as usize] = n.visits as f32;
-            });
+            for c in self.children.iter() {
+                probs[c.game.last_move as usize] = c.visits as f32;
+                sum += c.visits;
+            }
         }
-        softmax(&mut probs);
+        for c in self.children.iter() {
+            probs[c.game.last_move as usize] /= sum as f32;
+        }
+
         probs
     }
 
