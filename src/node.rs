@@ -1,5 +1,6 @@
 use crate::connect4::HEIGHT;
 use crate::cpuct;
+use crate::nn::softmax;
 use crate::Connect4;
 use crate::NNManager;
 use crate::Outcome;
@@ -94,23 +95,17 @@ impl Node {
         let mut probs: [f32; POLICY_SIZE] = [0.0; POLICY_SIZE];
         if self.terminal {
             let max = self.children.iter().max_by_key(|a| a.value).unwrap();
-            let mut sum = 0.0;
             for c in self.children.iter() {
                 if c.value == max.value {
-                    sum += 1.0;
                     probs[c.game.last_move as usize] = 1.0;
                 }
             }
-            probs.iter_mut().for_each(|p| *p /= sum);
         } else {
-            let all_visits = (&self.children)
-                .iter()
-                .fold(0, |all_visits, x| all_visits + x.visits);
             (&self.children).into_iter().for_each(|n| {
-                probs[n.game.last_move as usize] = n.visits as f32 / all_visits as f32
+                probs[n.game.last_move as usize] = n.visits as f32;
             });
         }
-
+        softmax(&mut probs);
         probs
     }
 

@@ -62,7 +62,7 @@ fn relu(v: &mut Vec<f32>) {
     }
 }
 
-fn softmax(v: &mut [f32; POLICY_SIZE]) {
+pub fn softmax(v: &mut [f32; POLICY_SIZE]) {
     let max = v
         .iter()
         .fold(f32::NEG_INFINITY, |max, i| if *i > max { *i } else { max });

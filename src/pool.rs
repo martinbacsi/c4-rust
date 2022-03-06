@@ -1,7 +1,8 @@
 use crate::Node;
 pub struct Pool {
     nodes: Vec<Node>,
-    ptrs: Vec<Box<Node>>,
+
+    pub ptrs: Vec<Box<Node>>,
     size: usize,
 }
 

@@ -21,6 +21,7 @@ use sample::SampleStore;
 use std::collections::HashMap;
 use std::env;
 use std::env::args;
+use std::thread;
 use std::time::{Duration, Instant};
 use std::{
     fs::File,
@@ -40,7 +41,7 @@ const conf: config = config {
 #[cfg(target_os = "windows")]
 const conf: config = config {
     selfplay: true,
-    iters: 2000,
+    iters: 10000,
 };
 
 const W: usize = 9;
@@ -58,7 +59,7 @@ fn main() {
         let (s, enc) = encode_b16k("best.w32");
         let st = String::from_utf16(&enc).unwrap();
 
-        let path = "nn_string.rs";
+        let path = "src/nn_string.rs";
         let mut output = File::create(path).unwrap();
         output.write(b"pub const nn_str: &str = \"");
         output.write(st.as_bytes());
@@ -66,31 +67,42 @@ fn main() {
     } else {
         #[cfg(target_os = "windows")]
         {
-            let mut ss: SampleStore = SampleStore {
-                samples: HashMap::new(),
-            };
-            let mut mcts = MCTS::new();
-            for i in 0..100 {
-                eprintln!("{}", i);
-                mcts.self_play(&mut ss);
-                mcts.clear();
+            let mut handles = Vec::new();
+
+            for i in 0..4 {
+                let handle = thread::spawn(|| {
+                    let mut ss: SampleStore = SampleStore {
+                        samples: HashMap::new(),
+                    };
+                    let mut mcts = MCTS::new();
+                    for i in 0..100 {
+                        eprintln!("{}", i);
+                        mcts.self_play(&mut ss);
+                        mcts.clear();
+                    }
+                    let mut file =
+                        File::create(String::from("./traindata/") + &random::rand().to_string())
+                            .unwrap();
+                    for (_, s) in &mut ss.samples {
+                        s.v /= s.visits as f32;
+                        for p in s.p.iter_mut() {
+                            *p /= s.visits as f32;
+                        }
+                        let a: [u8; INPUT_SIZE * 4] = unsafe { std::mem::transmute(s.input) };
+                        file.write_all(&a);
+
+                        let a: [u8; POLICY_SIZE * 4] = unsafe { std::mem::transmute(s.p) };
+                        file.write_all(&a);
+
+                        let a: [u8; 1 * 4] = unsafe { std::mem::transmute(s.v) };
+
+                        file.write_all(&a);
+                    }
+                });
+                handles.push(handle);
             }
-            let mut file =
-                File::create(String::from("./traindata/") + &random::rand().to_string()).unwrap();
-            for (_, s) in &mut ss.samples {
-                s.v /= s.visits as f32;
-                for p in &mut s.p {
-                    *p /= s.visits as f32;
-                }
-                let a: [u8; INPUT_SIZE * 4] = unsafe { std::mem::transmute(s.input) };
-                file.write_all(&a);
-
-                let a: [u8; POLICY_SIZE * 4] = unsafe { std::mem::transmute(s.p) };
-                file.write_all(&a);
-
-                let a: [u8; 1 * 4] = unsafe { std::mem::transmute(s.v) };
-
-                file.write_all(&a);
+            for h in handles.into_iter() {
+                h.join();
             }
         }
         #[cfg(target_os = "linux")]

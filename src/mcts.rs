@@ -28,6 +28,17 @@ pub struct MCTS {
     nn: NNManager,
 }
 
+impl Drop for MCTS {
+    fn drop(&mut self) {
+        let mut new_r = Box::new(Node::new());
+        swap(&mut new_r, &mut self.root);
+        self.pool.push(new_r);
+        self.pool.ptrs.drain(..).for_each(|n| {
+            Box::into_raw(n);
+        });
+    }
+}
+
 impl MCTS {
     pub fn new() -> MCTS {
         let mut mcts = MCTS {
@@ -72,12 +83,17 @@ impl MCTS {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
         let mut p = self.root.prob_vector();
-        dirichlet_noise(&mut p);
+        if self.root.game.turn() < 30 {
+            dirichlet_noise(&mut p);
+        }
 
         let mut best = 0.0;
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
-            let d = p[c.game.last_move as usize] * rand_float();
+            let mut d = p[c.game.last_move as usize];
+            if self.root.game.turn() < 30 {
+                d *= rand_float();
+            }
             if d > best {
                 best = d;
                 a = c.game.last_move;
@@ -164,9 +180,9 @@ impl MCTS {
 
             self.root.game.print();
             if self.root.terminal {
-                println!("{} {}", a, self.root.value);
+                println!("{} {}", a, 0 - self.root.value);
             } else {
-                println!("{} {}", a, self.root.Q / self.root.visits as f64);
+                println!("{} {}", a, 0. - self.root.Q / self.root.visits as f64);
             }
         }
     }

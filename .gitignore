@@ -1,1 +1,4 @@
 /target
+/traindata
+*.w32
+*.h5

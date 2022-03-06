@@ -46,10 +46,9 @@ value = tf.keras.layers.Activation(tf.nn.tanh, name='value')(value)
 model = tf.keras.Model(inputs=inputs, outputs=[value, policy])
 
 opt = tf.keras.optimizers.Adam()
-csv_logger = tf.keras.callbacks.CSVLogger('gen_train.log',append=False)
 
 def loss_func(y_true, y_pred):
-    return tf.losses.categorical_crossentropy(y_true, y_pred, from_logits = False)
+    return tf.losses.categorical_crossentropy(y_true, y_pred, from_logits = False) 
 
 model.compile(
     loss={'value': 'mean_squared_error', 'policy': loss_func },
@@ -72,7 +71,7 @@ if True and os.path.exists(keras_model_file):
 
 save_all(model, MODEL_FILE)
 np.set_printoptions(suppress=True)
-model.optimizer.learning_rate.assign(0.001)
+model.optimizer.learning_rate.assign(0.0001)
 
 while True:   
     list_of_files = os.listdir('traindata')
@@ -80,14 +79,14 @@ while True:
         csv_data = np.array([], dtype=float)
         full_path = ["traindata/{0}".format(x) for x in list_of_files]
         full_path.sort(key=os.path.getctime)
-        full_path = full_path[-10:]
+        full_path = full_path[-40:]
         for f in full_path:
             csv_data = np.append(csv_data, np.fromfile(f, dtype=np.float32))
         csv_data=np.reshape(csv_data, (-1,INPUT_SIZE+POLICY_SIZE+1))
         np.random.shuffle(csv_data)
         cut_index = [(csv_data.shape)[1]-POLICY_SIZE-1, (csv_data.shape)[1]-1]
         samples,policy,value=np.split(csv_data, cut_index,axis=1)
-        model.fit({'input':samples}, {'policy': policy, 'value':value},verbose=2, epochs = 20, callbacks=[csv_logger],batch_size=int(K_BATCH_SIZE))
+        model.fit({'input':samples}, {'policy': policy, 'value':value},verbose=2, epochs = 10, batch_size=int(K_BATCH_SIZE))
         save_all(model, MODEL_FILE)
-   
     subprocess.run("cargo run --release", shell=True)
+   
