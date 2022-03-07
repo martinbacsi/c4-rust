@@ -31,7 +31,7 @@ pub struct SampleStore {
 }
 
 impl SampleStore {
-        pub fn add_sample(&mut self, s: Sample) {
+    pub fn add_sample(&mut self, s: Sample) {
         let s_2 = self.samples.get_mut(&s.hash);
         if s_2.is_some() {
             let mut s2 = s_2.unwrap();
