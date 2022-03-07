@@ -11,7 +11,7 @@ H = 7;
 def save_model(model, fileSTR):
     Wmodel = open("./"+fileSTR, "wb")
     for x in model.weights:
-        nn = x.numpy()
+        nn = x.numpy().astype(np.float16)
         v = np.ndarray.tobytes(nn)
         Wmodel.write(bytearray(v))
     Wmodel.close()
@@ -33,6 +33,7 @@ def dense(features, x):
 
 inputs = tf.keras.Input(shape=(INPUT_SIZE,), name='input')
 x = dense(128, inputs)
+x = dense(64, x)
 x = dense(64, x)
 x = tf.keras.layers.Dense(
         POLICY_SIZE + 1,
@@ -64,7 +65,7 @@ def save_all(model, prefix):
     file_keras = prefix + postfix_keras
     save_model(model, prefix + postfix_32)
     model.save(file_keras)
-    subprocess.run("cargo run -q --release -- --encode", shell=True)
+    subprocess.run("cargo run --release -- --encode", shell=True)
    
 if True and os.path.exists(keras_model_file):
     model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
@@ -74,7 +75,6 @@ np.set_printoptions(suppress=True)
 model.optimizer.learning_rate.assign(0.001)
 
 while True:   
-    subprocess.run("cargo run --release", shell=True)
     list_of_files = os.listdir('traindata')
     if list_of_files:
         csv_data = np.array([], dtype=float)
@@ -90,3 +90,5 @@ while True:
         model.fit({'input':samples}, {'policy': policy, 'value':value},verbose=2, epochs = 10, batch_size=int(K_BATCH_SIZE))
         save_all(model, MODEL_FILE)
    
+
+    subprocess.run("cargo run --release", shell=True)

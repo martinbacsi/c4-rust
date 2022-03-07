@@ -24,6 +24,7 @@ use std::env::args;
 use std::fs;
 use std::thread;
 use std::time::{Duration, Instant};
+
 use std::{
     fs::File,
     io::{BufReader, Read, Write},
@@ -53,7 +54,7 @@ const INPUT_SIZE: usize = H * W * 2;
 
 const cpuct: f64 = 4.0;
 
-pub const nn_len: usize = 100648;
+pub const nn_len: usize = 100648 + 64 * (64 + 1) * 4;
 
 fn main() {
     if args().find(|a| a == "--encode").is_some() {

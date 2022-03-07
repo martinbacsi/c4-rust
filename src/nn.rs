@@ -1,4 +1,5 @@
 use crate::decode_base16k::decode_b16k;
+use crate::decode_base16k::f16_to_f32;
 use crate::Connect4;
 use crate::INPUT_SIZE;
 use crate::POLICY_SIZE;
@@ -75,6 +76,11 @@ pub fn softmax(v: &mut [f32; POLICY_SIZE]) {
     v.iter_mut().for_each(|i| (*i) /= sum);
 }
 
+union u8x2 {
+    bytes: [u8; 2],
+    short: u16,
+}
+
 impl NN {
     pub fn forward(&mut self, game: &Connect4) -> NnOutput {
         //todo dont reinit vec
@@ -112,13 +118,24 @@ impl NN {
                 DenseLayer::new(INPUT_SIZE),
                 DenseLayer::new(128),
                 DenseLayer::new(64),
+                DenseLayer::new(64),
             ],
         }
     }
 
     pub fn read_weights(&mut self) {
-        let buffer = decode_b16k();
-        let all_weights = unsafe { std::mem::transmute::<&[u8], &[f32]>(&buffer) };
+        let buffer_f16 = decode_b16k();
+        let mut buffer_f32 = Vec::new();
+        buffer_f32.reserve(buffer_f16.len() / 2);
+        for i in (0..buffer_f16.len()).step_by(2) {
+            unsafe {
+                let bytes = u8x2 {
+                    bytes: [buffer_f16[i], buffer_f16[i + 1]],
+                };
+                buffer_f32.push(f16_to_f32(bytes.short));
+            }
+        }
+
         let mut id = 0;
         for i in 0..self.path.len() {
             let next_size = if i == self.path.len() - 1 {
@@ -130,12 +147,12 @@ impl NN {
             self.path[i].weights.resize(weights_size, 0.0);
             self.path[i].bias.resize(next_size, 0.0);
             for j in 0..weights_size {
-                self.path[i].weights[j] = all_weights[id];
+                self.path[i].weights[j] = buffer_f32[id];
                 id += 1;
             }
 
             for j in 0..next_size {
-                self.path[i].bias[j] = all_weights[id];
+                self.path[i].bias[j] = buffer_f32[id];
                 id += 1;
             }
         }

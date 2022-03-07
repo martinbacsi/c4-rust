@@ -126,7 +126,6 @@ impl MCTS {
             ss.add_sample(Sample::new(&self.root));
             self.update_with_action(a);
         }
-        eprint!("nn rate:{}", self.nn.hit as f32 / self.nn.access as f32);
     }
 
     pub fn cg(&mut self) {

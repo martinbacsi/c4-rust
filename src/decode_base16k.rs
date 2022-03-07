@@ -1,6 +1,7 @@
 use std::{
     fs::File,
     io::{BufReader, Read, Write},
+    mem,
 };
 
 use crate::nn_len;
@@ -64,7 +65,7 @@ pub fn encode_b16k(binary_file: &str) -> (usize, Vec<u16>) {
 }
 
 pub fn decode_b16k() -> Vec<u8> {
-    let mut length = nn_len;
+    let mut length = nn_len / 2;
     //let mut length = a.len();
     let mut i = 0;
     let mut code: usize = 0;
@@ -118,4 +119,33 @@ pub fn decode_b16k() -> Vec<u8> {
     }
 
     out
+}
+
+pub fn f16_to_f32(i: u16) -> f32 {
+    if i & 0x7FFFu16 == 0 {
+        return unsafe { mem::transmute((i as u32) << 16) };
+    }
+    let half_sign = (i & 0x8000u16) as u32;
+    let half_exp = (i & 0x7C00u16) as u32;
+    let half_man = (i & 0x03FFu16) as u32;
+    if half_exp == 0x7C00u32 {
+        if half_man == 0 {
+            return unsafe { mem::transmute((half_sign << 16) | 0x7F80_0000u32) };
+        } else {
+            return unsafe {
+                mem::transmute((half_sign << 16) | 0x7FC0_0000u32 | (half_man << 13))
+            };
+        }
+    }
+    let sign = half_sign << 16;
+    let unbiased_exp = ((half_exp as i32) >> 10) - 15;
+    if half_exp == 0 {
+        let e = (half_man as u16).leading_zeros() - 6;
+        let exp = (127 - 15 - e) << 23;
+        let man = (half_man << (14 + e)) & 0x7F_FF_FFu32;
+        return unsafe { mem::transmute(sign | exp | man) };
+    }
+    let exp = ((unbiased_exp + 127) as u32) << 23;
+    let man = (half_man & 0x03FFu32) << 13;
+    unsafe { mem::transmute(sign | exp | man) }
 }
