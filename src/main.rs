@@ -21,6 +21,7 @@ use sample::SampleStore;
 use std::collections::HashMap;
 use std::env;
 use std::env::args;
+use std::fs;
 use std::thread;
 use std::time::{Duration, Instant};
 use std::{
@@ -41,7 +42,7 @@ const conf: config = config {
 #[cfg(target_os = "windows")]
 const conf: config = config {
     selfplay: true,
-    iters: 2000,
+    iters: 10000,
 };
 
 const W: usize = 9;
@@ -60,10 +61,12 @@ fn main() {
         let st = String::from_utf16(&enc).unwrap();
 
         let path = "src/nn_string.rs";
+        fs::remove_file(path);
         let mut output = File::create(path).unwrap();
         output.write(b"pub const nn_str: &str = \"");
         output.write(st.as_bytes());
         output.write(b"\";");
+        output.flush();
     } else {
         #[cfg(target_os = "windows")]
         {

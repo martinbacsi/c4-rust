@@ -101,9 +101,6 @@ impl Node {
                     probs[c.game.last_move as usize] = 1.0;
                 }
             }
-            if sum == 0 {
-                panic!("ASD");
-            }
         } else {
             for c in self.children.iter() {
                 probs[c.game.last_move as usize] = c.visits as f32;
@@ -113,7 +110,6 @@ impl Node {
         for c in self.children.iter() {
             probs[c.game.last_move as usize] /= sum as f32;
         }
-
         probs
     }
 
