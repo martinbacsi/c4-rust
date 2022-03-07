@@ -47,6 +47,8 @@ impl MCTS {
             nn: NNManager {
                 cache: HashMap::new(),
                 nn: NN::new(),
+                access: 0,
+                hit: 0,
             },
         };
         mcts.nn.nn.read_weights();
@@ -82,8 +84,9 @@ impl MCTS {
         for i in 0..conf.iters {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
+
         let mut p = self.root.prob_vector();
-        if self.root.game.turn() < 15 {
+        if self.root.game.turn() < 30 {
             dirichlet_noise(&mut p);
         }
 
@@ -91,7 +94,7 @@ impl MCTS {
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
             let mut d = p[c.game.last_move as usize];
-            if self.root.game.turn() < 15 {
+            if self.root.game.turn() < 30 {
                 d *= rand_float();
             }
             if d > best {
@@ -123,6 +126,7 @@ impl MCTS {
             ss.add_sample(Sample::new(&self.root));
             self.update_with_action(a);
         }
+        eprint!("nn rate:{}", self.nn.hit as f32 / self.nn.access as f32);
     }
 
     pub fn cg(&mut self) {

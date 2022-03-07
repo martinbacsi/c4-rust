@@ -74,6 +74,7 @@ np.set_printoptions(suppress=True)
 model.optimizer.learning_rate.assign(0.001)
 
 while True:   
+    subprocess.run("cargo run --release", shell=True)
     list_of_files = os.listdir('traindata')
     if list_of_files:
         csv_data = np.array([], dtype=float)
@@ -88,5 +89,4 @@ while True:
         samples,policy,value=np.split(csv_data, cut_index,axis=1)
         model.fit({'input':samples}, {'policy': policy, 'value':value},verbose=2, epochs = 10, batch_size=int(K_BATCH_SIZE))
         save_all(model, MODEL_FILE)
-    subprocess.run("cargo run --release", shell=True)
    

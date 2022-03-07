@@ -145,6 +145,8 @@ impl NN {
 pub struct NNManager {
     pub cache: HashMap<usize, NnOutput>,
     pub nn: NN,
+    pub access: usize,
+    pub hit: usize,
 }
 
 impl NNManager {
@@ -152,7 +154,10 @@ impl NNManager {
         let hash = game.hash();
         if !self.cache.contains_key(&hash) {
             self.cache.insert(hash, self.nn.forward(game));
+        } else {
+            self.hit += 1;
         }
+        self.access += 1;
         &self.cache[&hash]
     }
 }
