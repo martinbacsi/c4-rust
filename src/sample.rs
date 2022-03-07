@@ -31,17 +31,17 @@ pub struct SampleStore {
 }
 
 impl SampleStore {
-    pub fn add_sample(&mut self, mut s: Sample) {
-        if self.samples.contains_key(&s.hash) {
-            let s2 = &self.samples[&s.hash];
-            s.visits += s2.visits;
-            s.input.clone_from_slice(&s2.input);
+    pub fn add_sample(&mut self, s: Sample) {
+        let s_2 = self.samples.get_mut(&s.hash);
+        if s_2.is_some() {
+            let mut s2 = s_2.unwrap();
+            s2.visits += 1;
             for i in 0..POLICY_SIZE {
-                s.p[i] += s2.p[i];
+                s2.p[i] += s.p[i];
             }
-            s.v += s2.v;
+            s2.v += s.v;
+        } else {
+            self.samples.insert(s.hash, s);
         }
-
-        self.samples.insert(s.hash, s);
     }
 }
