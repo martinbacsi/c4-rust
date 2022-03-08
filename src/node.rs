@@ -97,19 +97,20 @@ impl Node {
         if self.terminal {
             for c in self.children.iter() {
                 if c.terminal && c.value == -self.value {
-                    sum += 1;
+                    //sum += 1;
                     probs[c.game.last_move as usize] = 1.0;
                 }
             }
         } else {
             for c in self.children.iter() {
                 probs[c.game.last_move as usize] = c.visits as f32;
-                sum += c.visits;
+                //sum += c.visits;
             }
         }
-        for c in self.children.iter() {
-            probs[c.game.last_move as usize] /= sum as f32;
-        }
+        softmax(&mut probs);
+        //for c in self.children.iter() {
+        //    probs[c.game.last_move as usize] /= sum as f32;
+        //}
         probs
     }
 

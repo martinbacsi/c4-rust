@@ -10,16 +10,20 @@ H = 7;
 
 def save_model(model, fileSTR):
     Wmodel = open("./"+fileSTR, "wb")
+    s = 0
     for x in model.weights:
         nn = x.numpy().astype(np.float16)
+        s += nn.size
         v = np.ndarray.tobytes(nn)
         Wmodel.write(bytearray(v))
     Wmodel.close()
+    print("model size: ", s) 
+    #exit()
 
 POLICY_SIZE = W;
 INPUT_SIZE = H * W * 2;
 
-K_BATCH_SIZE=256
+K_BATCH_SIZE=64
 K_EPOCH=10  
 
 def dense(features, x):
@@ -72,15 +76,16 @@ if True and os.path.exists(keras_model_file):
 
 save_all(model, MODEL_FILE)
 np.set_printoptions(suppress=True)
-model.optimizer.learning_rate.assign(0.001)
+model.optimizer.learning_rate.assign(0.0001)
 
 while True:   
+    subprocess.run("cargo run --release", shell=True)
     list_of_files = os.listdir('traindata')
     if list_of_files:
         csv_data = np.array([], dtype=float)
         full_path = ["traindata/{0}".format(x) for x in list_of_files]
         full_path.sort(key=os.path.getctime)
-        full_path = full_path[-40:]
+        full_path = full_path[-100:]
         for f in full_path:
             csv_data = np.append(csv_data, np.fromfile(f, dtype=np.float32))
         csv_data=np.reshape(csv_data, (-1,INPUT_SIZE+POLICY_SIZE+1))
@@ -90,5 +95,3 @@ while True:
         model.fit({'input':samples}, {'policy': policy, 'value':value},verbose=2, epochs = 10, batch_size=int(K_BATCH_SIZE))
         save_all(model, MODEL_FILE)
    
-
-    subprocess.run("cargo run --release", shell=True)

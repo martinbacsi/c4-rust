@@ -54,7 +54,7 @@ const INPUT_SIZE: usize = H * W * 2;
 
 const cpuct: f64 = 4.0;
 
-pub const nn_len: usize = 100648 + 64 * (64 + 1) * 4;
+pub const nn_len: usize = 29322 * 4;
 
 fn main() {
     if args().find(|a| a == "--encode").is_some() {
@@ -79,7 +79,7 @@ fn main() {
                         samples: HashMap::new(),
                     };
                     let mut mcts = MCTS::new();
-                    for i in 0..100 {
+                    for i in 0..250 {
                         eprintln!("{}", i);
                         mcts.self_play(&mut ss);
                         mcts.clear();

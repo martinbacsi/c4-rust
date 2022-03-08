@@ -147,7 +147,7 @@ impl MCTS {
             input_line.clear();
             io::stdin().read_line(&mut input_line).unwrap();
             if i == 0 {
-                endt = Instant::now() + Duration::from_millis(1000);
+                endt = Instant::now() + Duration::from_millis(950);
             } else {
                 endt = Instant::now() + Duration::from_millis(100);
             }
