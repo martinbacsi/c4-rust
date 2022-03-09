@@ -39,6 +39,7 @@ inputs = tf.keras.Input(shape=(INPUT_SIZE,), name='input')
 x = dense(128, inputs)
 x = dense(64, x)
 x = dense(64, x)
+x = dense(64, x)
 x = tf.keras.layers.Dense(
         POLICY_SIZE + 1,
         activation = None,
@@ -71,21 +72,21 @@ def save_all(model, prefix):
     model.save(file_keras)
     subprocess.run("cargo run --release -- --encode", shell=True)
    
-if True and os.path.exists(keras_model_file):
-    model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
+   
+#if True and os.path.exists(keras_model_file):
+#    model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
 
 save_all(model, MODEL_FILE)
 np.set_printoptions(suppress=True)
-model.optimizer.learning_rate.assign(0.0001)
+model.optimizer.learning_rate.assign(0.001)
 
 while True:   
-    subprocess.run("cargo run --release", shell=True)
     list_of_files = os.listdir('traindata')
     if list_of_files:
         csv_data = np.array([], dtype=float)
         full_path = ["traindata/{0}".format(x) for x in list_of_files]
         full_path.sort(key=os.path.getctime)
-        full_path = full_path[-100:]
+        full_path = full_path[-40:]
         for f in full_path:
             csv_data = np.append(csv_data, np.fromfile(f, dtype=np.float32))
         csv_data=np.reshape(csv_data, (-1,INPUT_SIZE+POLICY_SIZE+1))
@@ -95,3 +96,4 @@ while True:
         model.fit({'input':samples}, {'policy': policy, 'value':value},verbose=2, epochs = 10, batch_size=int(K_BATCH_SIZE))
         save_all(model, MODEL_FILE)
    
+    subprocess.run("cargo run --release", shell=True)

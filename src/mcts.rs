@@ -86,7 +86,7 @@ impl MCTS {
         }
 
         let mut p = self.root.prob_vector();
-        if self.root.game.turn() < 30 {
+        if self.root.game.turn() < 15 {
             dirichlet_noise(&mut p);
         }
 
@@ -94,7 +94,7 @@ impl MCTS {
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
             let mut d = p[c.game.last_move as usize];
-            if self.root.game.turn() < 30 {
+            if self.root.game.turn() < 15 {
                 d *= rand_float();
             }
             if d > best {

@@ -119,6 +119,7 @@ impl NN {
                 DenseLayer::new(128),
                 DenseLayer::new(64),
                 DenseLayer::new(64),
+                DenseLayer::new(64),
             ],
         }
     }

@@ -52,9 +52,9 @@ const H: usize = 7;
 const POLICY_SIZE: usize = W;
 const INPUT_SIZE: usize = H * W * 2;
 
-const cpuct: f64 = 4.0;
+const cpuct: f64 = 3.0;
 
-pub const nn_len: usize = 29322 * 4;
+pub const nn_len: usize = 33482 * 4;
 
 fn main() {
     if args().find(|a| a == "--encode").is_some() {
