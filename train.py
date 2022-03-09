@@ -73,8 +73,8 @@ def save_all(model, prefix):
     subprocess.run("cargo run --release -- --encode", shell=True)
    
    
-#if True and os.path.exists(keras_model_file):
-#    model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
+if True and os.path.exists(keras_model_file):
+    model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
 
 save_all(model, MODEL_FILE)
 np.set_printoptions(suppress=True)
