@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{connect4::Connect4, node::Node, INPUT_SIZE, POLICY_SIZE};
+use crate::{node::Node, INPUT_SIZE, POLICY_SIZE};
 
 #[derive(Copy, Clone)]
 pub struct Sample {
@@ -16,7 +16,7 @@ impl Sample {
         let mut sample: Sample = Sample {
             input: [0.0; INPUT_SIZE],
             p: node.prob_vector(),
-            v: node.Q as f32 / node.visits as f32,
+            v: node.q as f32 / node.visits as f32,
             visits: 1,
             hash: node.game.hash(),
         };

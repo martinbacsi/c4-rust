@@ -1,7 +1,5 @@
-use crate::conf;
 use crate::connect4::Outcome;
 use crate::nn::NN;
-use crate::pool;
 use crate::random::dirichlet_noise;
 use crate::random::rand_float;
 use crate::sample::Sample;
@@ -9,11 +7,10 @@ use crate::sample::SampleStore;
 use crate::NNManager;
 use crate::Node;
 use crate::Pool;
+use crate::CONF;
 use crate::POLICY_SIZE;
-use std::fmt::Result;
 use std::io;
 use std::mem::swap;
-use std::num::ParseIntError;
 use std::time::Duration;
 use std::{collections::HashMap, mem, time::Instant};
 
@@ -52,7 +49,7 @@ impl MCTS {
             },
         };
         mcts.nn.nn.read_weights();
-        for i in 0..2 {
+        for _ in 0..2 {
             mcts.root.playout(&mut mcts.nn, &mut mcts.pool);
         }
         mcts
@@ -81,7 +78,7 @@ impl MCTS {
     }
 
     fn get_move_probs_selfplay(&mut self) -> (u8, [f32; POLICY_SIZE]) {
-        for i in 0..conf.iters {
+        for _ in 0..CONF.iters {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
 
@@ -122,7 +119,7 @@ impl MCTS {
 
     pub fn self_play(&mut self, ss: &mut SampleStore) {
         while self.root.game.outcome == Outcome::None {
-            let (a, p) = self.get_move_probs_selfplay();
+            let (a, _) = self.get_move_probs_selfplay();
             ss.add_sample(Sample::new(&self.root));
             self.update_with_action(a);
         }
@@ -141,7 +138,7 @@ impl MCTS {
             input_line.clear();
             io::stdin().read_line(&mut input_line).unwrap();
             let num_valid_actions = parse_input!(input_line, i32);
-            for i in 0..num_valid_actions as usize {
+            for _ in 0..num_valid_actions as usize {
                 io::stdin().read_line(&mut input_line).unwrap();
             }
             input_line.clear();
@@ -171,7 +168,7 @@ impl MCTS {
             }
             let mut a = self.get_move_probs_play(endt);
             if hard_coded >= 0 {
-                a = (hard_coded as u8);
+                a = hard_coded as u8;
             } else {
                 if hard_coded == -2 {
                     my_last = -1;
@@ -185,7 +182,7 @@ impl MCTS {
             if self.root.terminal {
                 println!("{} {}", a, 0 - self.root.value);
             } else {
-                println!("{} {}", a, 0. - self.root.Q / self.root.visits as f64);
+                println!("{} {}", a, 0. - self.root.q / self.root.visits as f64);
             }
         }
     }

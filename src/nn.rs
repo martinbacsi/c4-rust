@@ -4,9 +4,6 @@ use crate::Connect4;
 use crate::INPUT_SIZE;
 use crate::POLICY_SIZE;
 use std::collections::HashMap;
-use std::fs::File;
-use std::intrinsics::transmute;
-use std::io::{BufReader, Read};
 pub struct NnOutput {
     pub p: [f32; POLICY_SIZE],
     pub v: f32,
@@ -76,7 +73,7 @@ pub fn softmax(v: &mut [f32; POLICY_SIZE]) {
     v.iter_mut().for_each(|i| (*i) /= sum);
 }
 
-union u8x2 {
+union U8x2 {
     bytes: [u8; 2],
     short: u16,
 }
@@ -130,7 +127,7 @@ impl NN {
         buffer_f32.reserve(buffer_f16.len() / 2);
         for i in (0..buffer_f16.len()).step_by(2) {
             unsafe {
-                let bytes = u8x2 {
+                let bytes = U8x2 {
                     bytes: [buffer_f16[i], buffer_f16[i + 1]],
                 };
                 buffer_f32.push(f16_to_f32(bytes.short));

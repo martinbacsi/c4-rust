@@ -1,12 +1,10 @@
+use crate::nn_string::NNSTR;
+use crate::NNLEN;
 use std::{
     fs::File,
-    io::{BufReader, Read, Write},
+    io::{BufReader, Read},
     mem,
 };
-
-use crate::nn_len;
-use crate::nn_string::nn_str;
-
 pub fn encode_b16k(binary_file: &str) -> (usize, Vec<u16>) {
     let f = File::open(binary_file);
     let mut reader = BufReader::new(f.unwrap());
@@ -56,7 +54,7 @@ pub fn encode_b16k(binary_file: &str) -> (usize, Vec<u16>) {
             _ => {}
         }
     }
-    if (buffer.len() % 7 > 0) {
+    if buffer.len() % 7 > 0 {
         code += 0x5000;
         enc.push(code);
     }
@@ -65,13 +63,13 @@ pub fn encode_b16k(binary_file: &str) -> (usize, Vec<u16>) {
 }
 
 pub fn decode_b16k() -> Vec<u8> {
-    let mut length = nn_len / 2;
+    let mut length = NNLEN / 2;
     //let mut length = a.len();
     let mut i = 0;
     let mut code: usize = 0;
     let mut byte_value = 0u8;
     let mut pos = 0;
-    let chars = nn_str.encode_utf16().collect::<Vec<u16>>();
+    let chars = NNSTR.encode_utf16().collect::<Vec<u16>>();
     let mut out: Vec<u8> = Vec::new();
     out.reserve(length);
     while length > 0 {
