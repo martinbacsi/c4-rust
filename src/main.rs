@@ -30,7 +30,7 @@ struct Config {
 }
 
 #[cfg(target_os = "linux")]
-const CONF: config = Config {
+const CONF: Config = Config {
     selfplay: false,
     iters: usize::MAX,
 };
