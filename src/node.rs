@@ -1,10 +1,9 @@
 use crate::connect4::HEIGHT;
-use crate::nn::softmax;
 use crate::Connect4;
 use crate::NNManager;
 use crate::Outcome;
 use crate::Pool;
-use crate::CPUCT;
+use crate::CONF;
 use crate::POLICY_SIZE;
 
 #[derive(Clone)]
@@ -66,7 +65,7 @@ impl Node {
             });
         }
 
-        let mult = CPUCT * (self.visits as f64).sqrt();
+        let mult = CONF.cpuct * (self.visits as f64).sqrt();
         let mut best_val = f64::NEG_INFINITY;
         let mut best = 0;
         for cid in 0..self.children.len() {
@@ -93,18 +92,21 @@ impl Node {
 
     pub fn prob_vector(&self) -> [f32; POLICY_SIZE] {
         let mut probs: [f32; POLICY_SIZE] = [0.0; POLICY_SIZE];
+        let mut sum = 0f32;
         if self.terminal {
             for c in self.children.iter() {
                 if c.terminal && c.value == -self.value {
                     probs[c.game.last_move as usize] = 1.0;
+                    sum += 1.0;
                 }
             }
         } else {
             for c in self.children.iter() {
                 probs[c.game.last_move as usize] = c.visits as f32;
+                sum += probs[c.game.last_move as usize];
             }
         }
-        softmax(&mut probs);
+        probs.iter_mut().for_each(|p| *p /= sum);
         probs
     }
 

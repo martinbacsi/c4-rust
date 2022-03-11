@@ -27,18 +27,21 @@ use std::{fs::File, io::Write};
 struct Config {
     selfplay: bool,
     iters: usize,
+    cpuct: f64,
 }
 
 #[cfg(target_os = "linux")]
 const CONF: Config = Config {
     selfplay: false,
     iters: usize::MAX,
+    cpuct: 3.0,
 };
 
 #[cfg(target_os = "windows")]
 const CONF: Config = Config {
     selfplay: true,
-    iters: 10000,
+    iters: 1000,
+    cpuct: 4.0,
 };
 
 const W: usize = 9;
@@ -47,9 +50,7 @@ const H: usize = 7;
 const POLICY_SIZE: usize = W;
 const INPUT_SIZE: usize = H * W * 2;
 
-const CPUCT: f64 = 3.0;
-
-pub const NNLEN: usize = 33482 * 4;
+pub const NNLEN: usize = 29322 * 4;
 
 fn main() {
     if args().find(|a| a == "--encode").is_some() {

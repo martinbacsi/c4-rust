@@ -39,7 +39,6 @@ inputs = tf.keras.Input(shape=(INPUT_SIZE,), name='input')
 x = dense(128, inputs)
 x = dense(64, x)
 x = dense(64, x)
-x = dense(64, x)
 x = tf.keras.layers.Dense(
         POLICY_SIZE + 1,
         activation = None,
@@ -75,10 +74,11 @@ def save_all(model, prefix):
    
 if True and os.path.exists(keras_model_file):
     model = tf.keras.models.load_model(keras_model_file, custom_objects={'loss_func': loss_func})
-
+    
 save_all(model, MODEL_FILE)
+#exit()
 np.set_printoptions(suppress=True)
-model.optimizer.learning_rate.assign(0.001)
+model.optimizer.learning_rate.assign(0.0001)
 
 while True:   
     list_of_files = os.listdir('traindata')

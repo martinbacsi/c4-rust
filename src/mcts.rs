@@ -14,6 +14,8 @@ use std::mem::swap;
 use std::time::Duration;
 use std::{collections::HashMap, mem, time::Instant};
 
+const DIRICHLET_EPS: f32 = 0.3;
+
 macro_rules! parse_input {
     ($x:expr, $t:ident) => {
         $x.trim().parse::<$t>().unwrap()
@@ -83,15 +85,24 @@ impl MCTS {
         }
 
         let mut p = self.root.prob_vector();
-        if self.root.game.turn() < 15 {
-            dirichlet_noise(&mut p);
+        if self.root.game.turn() < 30 {
+            let dir = dirichlet_noise();
+            let mut sum = 0f32;
+            for c in self.root.children.iter() {
+                let i = c.game.last_move as usize;
+                sum += dir[i];
+            }
+            for c in self.root.children.iter() {
+                let i = c.game.last_move as usize;
+                p[i] = p[i] * (1. - DIRICHLET_EPS) + DIRICHLET_EPS * dir[i] / sum;
+            }
         }
 
         let mut best = 0.0;
         let mut a = u8::MAX;
         self.root.children.iter().for_each(|c| {
             let mut d = p[c.game.last_move as usize];
-            if self.root.game.turn() < 15 {
+            if self.root.game.turn() < 30 {
                 d *= rand_float();
             }
             if d > best {
@@ -119,10 +130,16 @@ impl MCTS {
 
     pub fn self_play(&mut self, ss: &mut SampleStore) {
         while self.root.game.outcome == Outcome::None {
-            let (a, _) = self.get_move_probs_selfplay();
-            ss.add_sample(Sample::new(&self.root));
+            let (a, p) = self.get_move_probs_selfplay();
+            let mut sample = Sample::new(&self.root);
+            sample.p.clone_from(&p);
+            ss.add_sample(sample);
             self.update_with_action(a);
         }
+        eprintln!(
+            "{} nn rate",
+            100f32 * self.nn.hit as f32 / self.nn.access as f32
+        );
     }
 
     pub fn cg(&mut self) {
@@ -144,7 +161,7 @@ impl MCTS {
             input_line.clear();
             io::stdin().read_line(&mut input_line).unwrap();
             if i == 0 {
-                endt = Instant::now() + Duration::from_millis(950);
+                endt = Instant::now() + Duration::from_millis(900);
             } else {
                 endt = Instant::now() + Duration::from_millis(100);
             }

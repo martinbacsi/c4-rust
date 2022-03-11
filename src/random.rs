@@ -2,7 +2,6 @@ use std::arch::x86_64::_rdrand64_step;
 
 use crate::POLICY_SIZE;
 
-const DIRICHLET_EPS: f32 = 0.3;
 const PI: f32 = 3.14159265358979323846264338327950288f32;
 //http://www.rskey.org/gamma.htm
 fn gamm(x: f32) -> f32 {
@@ -38,12 +37,9 @@ pub fn rand_gamma(x: f32, a: f32, b: f32) -> f32 {
     gamma_pdf(x * rand_float(), a, b)
 }
 
-pub fn dirichlet_noise(v: &mut [f32; POLICY_SIZE]) {
+pub fn dirichlet_noise() -> [f32; POLICY_SIZE] {
     //TODO PARAM, CHECK
     let mut dir: [f32; POLICY_SIZE] = [0.0; POLICY_SIZE];
-    dir.iter_mut().for_each(|a| *a = rand_gamma(1.0, 1.3, 1.0));
-    let sum: f32 = dir.iter().sum();
-    for i in 0..POLICY_SIZE {
-        v[i] = v[i] * (1. - DIRICHLET_EPS) + DIRICHLET_EPS * dir[i] / sum;
-    }
+    dir.iter_mut().for_each(|a| *a = rand_gamma(1.0, 0.5, 1.0));
+    dir
 }
