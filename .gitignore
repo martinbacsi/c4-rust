@@ -1,4 +1,4 @@
 /target
-/traindata
+traindata/*
 *.w32
 *.h5
