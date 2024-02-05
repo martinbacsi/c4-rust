@@ -3,8 +3,16 @@ name = "c4-rust"
 version = "0.1.0"
 edition = "2021"
 
+
 [dependencies]
 rand  = "*"
-
+cargo_metadata = "0.5"
+quote = "0.5"
+rustfmt = "0.10"
+toml = "0.5.8"
+rand_distr= "*"
+tch = "0.4"
+nalgebra = "0.29"
+syn = { version = "0.13", features = ["full", "extra-traits", "visit-mut"] }
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

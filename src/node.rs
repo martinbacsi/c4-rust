@@ -1,67 +1,46 @@
-use crate::connect4::HEIGHT;
-use crate::Connect4;
-use crate::NNManager;
-use crate::Outcome;
-use crate::Pool;
+use crate::game::*;
+use crate::nn::NN;
 use crate::CONF;
-use crate::POLICY_SIZE;
 
 #[derive(Clone)]
 pub struct Node {
-    pub terminal: bool,
     pub visits: i32,
-    pub value: i8,
     pub q: f64,
     p: f32,
-    pub children: Vec<Box<Node>>,
-    pub game: Connect4,
-    expanded: bool,
-    live_child: u16,
+    pub children: Vec<Node>,
+    pub action: usize,
+    pub expanded: bool,
+    pi: [f32; ACTION_SIZE]
 }
 
 impl Node {
     pub fn new() -> Self {
         Node {
-            terminal: false,
             visits: 0,
-            value: -1,
             q: 0.,
             p: 0.,
             children: Vec::new(),
-            game: Connect4::new(),
+            action: 420,
             expanded: false,
-            live_child: 0,
+            pi: [0.0; ACTION_SIZE]
         }
     }
 
     pub fn reinit(&mut self) {
-        self.terminal = false;
-        self.visits = 0;
-        self.value = -1;
-        self.q = 0.;
-        self.p = 0.;
-        self.children.clear();
-        self.game = Connect4::new();
-        self.expanded = false;
-        self.live_child = 0;
+        *self = Node::new();
     }
 
     fn ucb(&self, mult: f64) -> f64 {
         ((self.p as f64) * mult + self.q) / ((1 + self.visits) as f64)
     }
 
-    pub fn select(&mut self, nn: &mut NNManager, pool: &mut Pool) -> usize {
+    pub fn select(&mut self) -> usize {
         if self.children.is_empty() {
-            let nnval = nn.get(&self.game);
-            (0..POLICY_SIZE).for_each(|a| {
-                if self.game.height[a] < HEIGHT as u8 {
-                    self.live_child |= 1 << a;
-                    let mut n = pool.pop();
-                    n.p = nnval.p[a];
-                    n.game = self.game;
-                    n.game.step(a as u8);
-                    self.children.push(n);
-                };
+            (0..ACTION_SIZE).for_each(|a| {
+                let mut n = Node::new();
+                n.p = self.pi[a];
+                n.action = a;
+                self.children.push(n);
             });
         }
 
@@ -76,75 +55,33 @@ impl Node {
                 best = cid;
             }
         }
-        best
+       best
     }
 
-    fn expand(&mut self, nn: &mut NNManager) -> f32 {
-        let nnval = nn.get(&self.game);
+    pub fn expand(&mut self, nn: &NN, game: &Game, player: usize) -> f32 {
+        let nnval = nn.run_game(game, player);
+        self.pi = nnval.p;
         self.expanded = true;
         nnval.v
     }
 
-    fn update(&mut self, value: f32) {
+    pub fn update(&mut self, value: f32) {
         self.visits += 1;
         self.q += value as f64;
     }
 
-    pub fn prob_vector(&self) -> [f32; POLICY_SIZE] {
-        let mut probs: [f32; POLICY_SIZE] = [0.0; POLICY_SIZE];
+    pub fn prob_vector(&self) -> [f32; ACTION_SIZE] {
+        let mut probs: [f32; ACTION_SIZE] = [0.0; ACTION_SIZE];
         let mut sum = 0f32;
-        if self.terminal {
-            for c in self.children.iter() {
-                if c.terminal && c.value == -self.value {
-                    probs[c.game.last_move as usize] = 1.0;
-                    sum += 1.0;
-                }
-            }
-        } else {
-            for c in self.children.iter() {
-                probs[c.game.last_move as usize] = c.visits as f32;
-                sum += probs[c.game.last_move as usize];
-            }
+      
+        for c in self.children.iter() {
+            probs[c.action] = c.visits as f32;
+            sum += probs[c.action as usize];
         }
+        
         probs.iter_mut().for_each(|p| *p /= sum);
         probs
     }
-
-    pub fn playout(&mut self, nn: &mut NNManager, pool: &mut Pool) -> f32 {
-        if self.game.outcome != Outcome::None {
-            self.value = if self.game.outcome == Outcome::Win {
-                1
-            } else {
-                0
-            };
-            self.terminal = true;
-        }
-        let val;
-
-        if !self.expanded {
-            val = self.expand(nn);
-        } else {
-            let cid = self.select(nn, pool);
-            if self.terminal {
-                val = self.value as f32;
-            } else {
-                let c = &mut self.children[cid];
-                val = -c.playout(nn, pool);
-                if c.terminal {
-                    self.value = self.value.max(c.value);
-                    if c.value == 1 {
-                        self.live_child = 0;
-                    } else {
-                        self.live_child ^= 1 << c.game.last_move;
-                    }
-                    if self.live_child == 0 {
-                        self.terminal = true;
-                        self.value = -self.value;
-                    }
-                }
-            }
-        }
-        self.update(val);
-        val
-    }
 }
+
+

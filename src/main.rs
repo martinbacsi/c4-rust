@@ -1,23 +1,33 @@
 #![allow(dead_code)]
 #![allow(unused_must_use)]
 
-mod connect4;
 mod decode_base16k;
 mod mcts;
+
 mod nn;
 mod nn_string;
 mod node;
-mod pool;
 mod random;
 mod sample;
+
+mod xorshift;
+mod game;
+mod ugly;
+mod entity;
+mod scan;
+mod vector;
+mod fish;
+mod drone;
+mod collision;
+mod player;
+mod closest;
+
+
 use crate::decode_base16k::encode_b16k;
-use connect4::Connect4;
-use connect4::Outcome;
+use crate::nn::NN;
 use mcts::MCTS;
-use nn::NNManager;
 use node::Node;
-use pool::Pool;
-use sample::SampleStore;
+use rand::RngCore;
 use std::collections::HashMap;
 use std::env::args;
 use std::fs;
@@ -28,6 +38,8 @@ struct Config {
     selfplay: bool,
     iters: usize,
     cpuct: f64,
+    learning_rate: f64,
+    load_file: bool
 }
 
 #[cfg(target_os = "linux")]
@@ -40,15 +52,11 @@ const CONF: Config = Config {
 #[cfg(target_os = "windows")]
 const CONF: Config = Config {
     selfplay: true,
-    iters: 1000,
+    iters: 100,
     cpuct: 4.0,
+    learning_rate: 0.0001,
+    load_file: true
 };
-
-const W: usize = 9;
-const H: usize = 7;
-
-const POLICY_SIZE: usize = W;
-const INPUT_SIZE: usize = H * W * 2;
 
 pub const NNLEN: usize = 29322 * 4;
 
@@ -64,42 +72,36 @@ fn main() {
         output.write(st.as_bytes());
         output.write(b"\";");
         output.flush();
+
+
     } else {
         #[cfg(target_os = "windows")]
         {
-            let mut handles = Vec::new();
+            loop {
+                let mut handles = Vec::new();
 
-            for _ in 0..4 {
-                let handle = thread::spawn(|| {
-                    let mut ss: SampleStore = SampleStore {
-                        samples: HashMap::new(),
-                    };
-                    let mut mcts = MCTS::new();
-                    for i in 0..250 {
-                        eprintln!("{}", i);
-                        mcts.self_play(&mut ss);
-                        mcts.clear();
-                    }
-                    let mut file =
-                        File::create(String::from("./traindata/") + &random::rand().to_string())
-                            .unwrap();
-                    for (_, s) in &mut ss.samples {
-                        s.v /= s.visits as f32;
-                        for p in s.p.iter_mut() {
-                            *p /= s.visits as f32;
+                for _ in 0..1 {
+                    let handle = thread::spawn(|| {
+                        let mut ss = Vec::new();
+                        let mut mcts = MCTS::new();
+                        for i in 0..30 {
+                            eprintln!("{}", i);
+                            mcts.self_play(&mut ss);
                         }
-                        let a: [u8; INPUT_SIZE * 4] = unsafe { std::mem::transmute(s.input) };
-                        file.write_all(&a);
-                        let a: [u8; POLICY_SIZE * 4] = unsafe { std::mem::transmute(s.p) };
-                        file.write_all(&a);
-                        let a: [u8; 1 * 4] = unsafe { std::mem::transmute(s.v) };
-                        file.write_all(&a);
-                    }
-                });
-                handles.push(handle);
-            }
-            for h in handles.into_iter() {
-                h.join();
+                        
+                        ss
+                    });
+                    handles.push(handle);
+                }
+                
+                let mut combined_samples = Vec::new();
+                for handle in handles {
+                    combined_samples.extend(handle.join().unwrap());
+                }
+
+                let mut nn = NN::new();
+                nn.train(&combined_samples);
+            
             }
         }
         #[cfg(target_os = "linux")]
