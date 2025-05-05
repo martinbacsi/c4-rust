@@ -5,6 +5,16 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python 调试程序: 模块",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "py.cg.main",
+            "justMyCode": false,
+            "args": [
+                "test"
+            ]
+        },
+        {
             "name": "Launch",
             "type": "cppvsdbg",
             "request": "launch",
@@ -12,10 +22,9 @@
             "stopAtEntry": false,
             "args": [],
             "cwd": "${workspaceFolder}",
-            "console":"externalTerminal",
+            "console": "externalTerminal",
             "environment": [],
             "preLaunchTask": "cargo build"
         }
-     ]
-    
+    ]
 }

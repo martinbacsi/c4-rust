@@ -3,3 +3,4 @@ traindata/*
 *.w32
 *.h5
 .vs
+*.pyc

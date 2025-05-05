@@ -1,6 +1,6 @@
-
 use crate::game::Action;
 use crate::game::Game;
+use crate::game::*;
 use crate::nn::NN;
 use crate::node;
 #[cfg(target_os = "windows")]
@@ -8,12 +8,11 @@ use crate::random::dirichlet_noise;
 use crate::sample::Sample;
 use crate::Node;
 use crate::CONF;
-use crate::game::*;
+use rand::rngs::ThreadRng;
+use rand::Rng;
 use std::mem::swap;
 use std::time::Duration;
 use std::{collections::HashMap, mem, time::Instant};
-use rand::rngs::ThreadRng;
-use rand::Rng;
 const DIRICHLET_EPS: f32 = 0.3;
 
 macro_rules! parse_input {
@@ -38,13 +37,13 @@ impl MCTS {
     }
     fn update_with_action(&mut self, player: usize, action: usize) {
         let root = &mut self.roots[player];
-        assert!(!root.children.is_empty()); 
+        assert!(!root.children.is_empty());
         let mut new_root = Node::new();
         while root.children.len() > 0 {
-            let r =  root.children.pop().unwrap();
+            let r = root.children.pop().unwrap();
             if r.action == action {
                 new_root = r;
-            } 
+            }
         }
         *root = new_root;
     }
@@ -53,13 +52,13 @@ impl MCTS {
         let mut game = _game.clone();
         let mut leaf = false;
         let mut val = -69.0;
-    
+
         let mut stacks = [Vec::new(), Vec::new()];
         unsafe {
             for i in 0..2 {
-                stacks[i].push( &mut self.roots[i] as *mut Node,);  
+                stacks[i].push(&mut self.roots[i] as *mut Node);
             }
-        
+
             while !leaf && !game.is_game_over() {
                 let mut a = [69; 69];
                 for i in 0..2 {
@@ -71,17 +70,16 @@ impl MCTS {
                         }
                         //eprintln!("{}", val);
                         leaf = true;
-                    }
-                    else  {
+                    } else {
                         a[i] = (*st).select();
                         stacks[i].push(&mut (*st).children[a[i]]);
-                    }                 
-                } 
-        
+                    }
+                }
+
                 if !leaf {
                     game.step([Action::new(a[0], false), Action::new(a[1], true)]);
                 }
-                
+
                 //eprintln!("{}", game.game_turn);
             }
             if game.is_game_over() {
@@ -97,20 +95,19 @@ impl MCTS {
 
     #[cfg(target_os = "windows")]
     fn get_move_probs_selfplay(&mut self, player: usize) -> (usize, [f32; ACTION_SIZE]) {
-
         let mut p = self.roots[player].prob_vector();
-      
+
         let dir = dirichlet_noise(&mut self.r);
         let mut sum = 0f32;
         for c in self.roots[player].children.iter() {
             let i = c.action as usize;
             sum += dir[i];
         }
-        for c in  self.roots[player].children.iter() {
+        for c in self.roots[player].children.iter() {
             let i = c.action as usize;
             p[i] = p[i] * (1. - DIRICHLET_EPS) + DIRICHLET_EPS * dir[i] / sum;
         }
-        
+
         let mut best = 0.0;
         let mut a = usize::MAX;
         self.roots[player].children.iter().for_each(|c| {
@@ -118,15 +115,14 @@ impl MCTS {
 
             if d > best {
                 best = d;
-                a = c.action ;
+                a = c.action;
             }
         });
         (a, p)
     }
 
     fn get_move_probs_play(&mut self, endt: Instant) -> u8 {
-        69
-        /*while Instant::now() < endt {
+        while Instant::now() < endt {
             self.root.playout(&mut self.nn, &mut self.pool);
         }
         let a = self.root.children.iter().max_by_key(|b| {
@@ -137,7 +133,7 @@ impl MCTS {
             }
         });
         eprintln!("root visits: {}", self.root.visits);
-        a.unwrap().game.last_move*/
+        a.unwrap().game.last_move
     }
 
     #[cfg(target_os = "windows")]
@@ -161,15 +157,26 @@ impl MCTS {
                 let mut sample = Sample::new(&self.roots[i], &game, i);
                 sample.p.clone_from(&p);
                 new_samples.push(sample);
-                self.update_with_action(i, a); 
-            }    
-            game.step([Action::new(actions[0], false), Action::new(actions[1], true)]);
+                self.update_with_action(i, a);
+            }
+            game.step([
+                Action::new(actions[0], false),
+                Action::new(actions[1], true),
+            ]);
         }
         for (i, s) in new_samples.iter_mut().enumerate() {
             s.v = game.score(i % 2);
             ss.push(*s);
         }
 
-        eprintln!("truns: {}, scores: {} vs {}. val:{}, ku_val: {} vs {}", game.game_turn, game.compute_player_score(0), game.compute_player_score(1), self.nn.run_game(&game, 0).v, self.roots[0].q,  self.roots[1].q);
+        eprintln!(
+            "truns: {}, scores: {} vs {}. val:{}, ku_val: {} vs {}",
+            game.game_turn,
+            game.compute_player_score(0),
+            game.compute_player_score(1),
+            self.nn.run_game(&game, 0).v,
+            self.roots[0].q,
+            self.roots[1].q
+        );
     }
 }
